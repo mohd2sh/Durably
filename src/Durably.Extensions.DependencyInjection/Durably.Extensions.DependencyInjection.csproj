@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <PackageId>Durably.Extensions.DependencyInjection</PackageId>
+    <Description>Microsoft.Extensions.DependencyInjection wiring for Durably: AddDurably, flow registration, and the IDurablyBuilder used by persistence providers.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Durably.Core\Durably.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Durably.Extensions.DependencyInjection.UnitTests" />
+    <InternalsVisibleTo Include="Durably.E2E.Tests" />
+    <InternalsVisibleTo Include="Durably.Load.Tests" />
+  </ItemGroup>
+
+</Project>

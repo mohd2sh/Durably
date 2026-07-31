@@ -1,0 +1,24 @@
+<header class="app-shell">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">{{ title }}</span>
+    <span class="brand-badge">Dashboard</span>
+  </div>
+
+  <button
+    mat-icon-button
+    type="button"
+    class="theme-toggle"
+    [matTooltip]="themeService.theme() === 'light' ? 'Switch to dark' : 'Switch to light'"
+    (click)="toggleTheme()"
+    aria-label="Toggle color theme"
+  >
+    <span class="material-symbols-outlined">
+      {{ themeService.theme() === 'light' ? 'dark_mode' : 'light_mode' }}
+    </span>
+  </button>
+</header>
+
+<main class="content">
+  <router-outlet></router-outlet>
+</main>

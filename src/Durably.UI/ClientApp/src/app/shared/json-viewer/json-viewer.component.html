@@ -1,0 +1,22 @@
+<div class="json-viewer" [style.--viewer-max-height]="maxHeight">
+  <div class="toolbar">
+    <span class="label">JSON</span>
+    <button
+      mat-icon-button
+      type="button"
+      class="copy-btn"
+      [matTooltip]="copyLabel"
+      [disabled]="!formatted"
+      (click)="copy()"
+      aria-label="Copy JSON"
+    >
+      <span class="material-symbols-outlined">content_copy</span>
+    </button>
+  </div>
+
+  @if (!formatted) {
+    <div class="empty">{{ emptyLabel }}</div>
+  } @else {
+    <pre class="code"><code [innerHTML]="highlightedHtml"></code></pre>
+  }
+</div>

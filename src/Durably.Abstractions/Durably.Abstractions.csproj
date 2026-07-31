@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <PackageId>Durably.Abstractions</PackageId>
+    <Description>Durably core abstractions: the stable contract (IStep, IFlow, IFlowEngine, IExecutionStore) shared by the engine and persistence providers.</Description>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <PackageId>Durably.UI</PackageId>
+    <Description>Embeddable Angular dashboard and JSON API for Durably execution and trace observability.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <DefaultItemExcludes>$(DefaultItemExcludes);ClientApp\**\*</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Durably.Abstractions\Durably.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="BuildClientApp" BeforeTargets="Build" Condition="Exists('ClientApp\package.json') And '$(SkipAngularBuild)' != 'true'">
+    <Exec WorkingDirectory="ClientApp" Command="npm run build -- --configuration production" />
+  </Target>
+
+</Project>

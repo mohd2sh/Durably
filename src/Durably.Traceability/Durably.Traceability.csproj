@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <PackageId>Durably.Traceability</PackageId>
+    <Description>Async, non-blocking traceability for Durably: bounded channel sink and a background writer that persists per-step events without blocking checkpoints.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Durably.Abstractions\Durably.Abstractions.csproj" />
+    <ProjectReference Include="..\Durably.Extensions.DependencyInjection\Durably.Extensions.DependencyInjection.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Threading.Channels" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Durably.E2E.Tests" />
+    <InternalsVisibleTo Include="Durably.Traceability.UnitTests" />
+    <InternalsVisibleTo Include="Durably.Traceability.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

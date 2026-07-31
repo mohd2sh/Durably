@@ -1,0 +1,147 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
+
+namespace Durably;
+
+/// <summary>Endpoint mapping for the embeddable Durably observability UI.</summary>
+public static class DurablyUIEndpointRouteBuilderExtensions
+{
+    private const string BasePlaceholder = "#uiPath#";
+    private const string ApiPlaceholder = "#apiPath#";
+
+    /// <summary>
+    /// Maps the private JSON API and SPA at <paramref name="routePrefix"/> (default from options).
+    /// Anonymous by default (HealthChecks.UI style). Chain <c>RequireAuthorization()</c> to harden.
+    /// </summary>
+    public static IEndpointConventionBuilder MapDurablyUI(
+        this IEndpointRouteBuilder endpoints,
+        string? routePrefix = null)
+    {
+        if (endpoints is null)
+        {
+            throw new ArgumentNullException(nameof(endpoints));
+        }
+
+        var options = endpoints.ServiceProvider.GetRequiredService<IOptions<DurablyUIOptions>>().Value;
+        var prefix = RoutePrefixNormalizer.Normalize(routePrefix ?? options.RoutePrefix);
+        var apiPath = $"{prefix}/{DurablyUIRoutes.ApiRoot}";
+
+        var apiGroup = endpoints.MapGroup(apiPath);
+        apiGroup.ExcludeFromDescription();
+        apiGroup.MapExecutionsEndpoints();
+
+        var spaBuilders = MapSpa(endpoints, prefix, apiPath);
+        return new CompositeEndpointConventionBuilder([apiGroup, .. spaBuilders]);
+    }
+
+    private static IReadOnlyList<IEndpointConventionBuilder> MapSpa(
+        IEndpointRouteBuilder endpoints,
+        string prefix,
+        string apiPath)
+    {
+        var webRoot = WwwRootPathResolver.Resolve();
+        if (!Directory.Exists(webRoot))
+        {
+            return Array.Empty<IEndpointConventionBuilder>();
+        }
+
+        // PhysicalFileProvider is retained for the lifetime of the mapped SPA endpoints (app lifetime).
+#pragma warning disable CA2000 // Dispose objects before losing scope
+        var fileProvider = new PhysicalFileProvider(webRoot);
+#pragma warning restore CA2000
+        var builders = new List<IEndpointConventionBuilder>(2);
+
+        builders.Add(
+            endpoints.MapGet(prefix, () => Results.Redirect($"{prefix}/index.html"))
+                .ExcludeFromDescription());
+
+        builders.Add(
+            endpoints.MapGet($"{prefix}/{{**spaPath}}", async context =>
+            {
+                var requestPath = context.Request.Path.Value ?? string.Empty;
+                if (requestPath.Contains($"/{DurablyUIRoutes.ApiRoot}/", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                var relativePath = requestPath[prefix.Length..].TrimStart('/');
+                if (string.IsNullOrWhiteSpace(relativePath))
+                {
+                    relativePath = "index.html";
+                }
+
+                var fileInfo = fileProvider.GetFileInfo(relativePath);
+                if (!fileInfo.Exists)
+                {
+                    fileInfo = fileProvider.GetFileInfo("index.html");
+                    relativePath = "index.html";
+                }
+
+                if (!fileInfo.Exists)
+                {
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+                    return;
+                }
+
+                context.Response.ContentType = ResolveContentType(relativePath);
+
+                if (IsHtmlShell(relativePath))
+                {
+                    await WriteRewrittenHtmlAsync(context, fileInfo.PhysicalPath!, prefix, apiPath)
+                        .ConfigureAwait(false);
+                    return;
+                }
+
+                await context.Response.SendFileAsync(fileInfo.PhysicalPath!).ConfigureAwait(false);
+            })
+            .ExcludeFromDescription());
+
+        return builders;
+    }
+
+    private static bool IsHtmlShell(string relativePath) =>
+        relativePath.Equals("index.html", StringComparison.OrdinalIgnoreCase);
+
+    private static async Task WriteRewrittenHtmlAsync(
+        HttpContext context,
+        string physicalPath,
+        string prefix,
+        string apiPath)
+    {
+        var html = await File.ReadAllTextAsync(physicalPath).ConfigureAwait(false);
+        html = html
+            .Replace(BasePlaceholder, prefix, StringComparison.Ordinal)
+            .Replace(ApiPlaceholder, apiPath, StringComparison.Ordinal);
+
+        await context.Response.WriteAsync(html).ConfigureAwait(false);
+    }
+
+    private static string ResolveContentType(string relativePath)
+    {
+        if (relativePath.EndsWith(".js", StringComparison.OrdinalIgnoreCase))
+        {
+            return "application/javascript";
+        }
+
+        if (relativePath.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
+        {
+            return "text/css";
+        }
+
+        if (relativePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        {
+            return "application/json";
+        }
+
+        if (relativePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+        {
+            return "image/svg+xml";
+        }
+
+        return "text/html";
+    }
+}

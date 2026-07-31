@@ -1,0 +1,46 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
+    <PackageVersion Include="Respawn" Version="7.0.0" />
+    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageVersion Include="System.Threading.Channels" Version="8.0.0" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+    <PackageVersion Include="Dapper" Version="2.1.66" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageVersion Include="Npgsql" Version="8.0.6" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.12.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.12.0" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.6.0.109712" />
+  </ItemGroup>
+  <!-- Test dependencies -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+    <PackageVersion Include="Microsoft.AspNet.WebApi.OwinSelfHost" Version="5.3.0" />
+    <PackageVersion Include="Microsoft.Owin.Host.HttpListener" Version="4.2.2" />
+    <PackageVersion Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
+  </ItemGroup>
+  <!-- Aspire -->
+  <ItemGroup>
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="8.2.2" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="8.2.2" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="8.10.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="8.2.2" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.9.0" />
+  </ItemGroup>
+</Project>

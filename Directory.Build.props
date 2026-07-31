@@ -1,0 +1,47 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
+    <!-- Code analysis -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Default</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <Authors>Durably</Authors>
+    <Company>Durably</Company>
+    <Product>Durably</Product>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/durably/durably</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/durably/durably</RepositoryUrl>
+    <PackageTags>durable-execution;workflow;resume;checkpoint;retry;saga;dotnet</PackageTags>
+    <Description>Durable execution for everyday .NET code. Checkpoint your steps; resume after any crash.</Description>
+  </PropertyGroup>
+
+  <!-- Analyzers + warnings-as-errors for src and tests -->
+  <PropertyGroup Condition="$(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)src')) Or $(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)tests'))">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS1591</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!-- Tests: empty marker types for Flow.For&lt;TFlow,TState&gt;(); xUnit underscore method names -->
+  <PropertyGroup Condition="$(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)tests'))">
+    <NoWarn>$(NoWarn);S2094;CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="($(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)src')) Or $(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)tests'))) And '$(ManagePackageVersionsCentrally)' != 'false'">
+    <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)src')) And '$(ManagePackageVersionsCentrally)' == 'false'">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.6.0.109712" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

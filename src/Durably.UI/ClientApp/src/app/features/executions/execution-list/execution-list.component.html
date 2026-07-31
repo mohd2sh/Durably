@@ -1,0 +1,112 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Executions</h1>
+      <p class="page-subtitle">Search durable flow instances by id, flow, status, and metadata.</p>
+    </div>
+    <button mat-flat-button color="primary" type="button" class="btn-with-icon" (click)="search()">
+      <span class="material-symbols-outlined">refresh</span>
+      Refresh
+    </button>
+  </header>
+
+  <form class="filters panel" [formGroup]="filterForm" (ngSubmit)="search()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Instance / message id</mat-label>
+      <input matInput formControlName="instanceId" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Flow name</mat-label>
+      <input matInput formControlName="flowName" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Status</mat-label>
+      <mat-select formControlName="status">
+        @for (option of statusOptions; track option.label) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Metadata key</mat-label>
+      <input matInput formControlName="metadataKey" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Metadata value</mat-label>
+      <input matInput formControlName="metadataValue" />
+    </mat-form-field>
+
+    <button mat-stroked-button type="submit" class="btn-with-icon search-btn">
+      <span class="material-symbols-outlined">search</span>
+      Search
+    </button>
+  </form>
+
+  @if (isLoading) {
+    <div class="loading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  } @else {
+    <div class="table-meta">
+      <span class="summary">{{ totalCount }} execution(s)</span>
+    </div>
+
+    <div class="table-shell panel">
+      <table mat-table [dataSource]="executions" class="execution-table">
+        <ng-container matColumnDef="instanceId">
+          <th mat-header-cell *matHeaderCellDef>Instance</th>
+          <td mat-cell *matCellDef="let row" class="mono">{{ row.instanceId }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="flowName">
+          <th mat-header-cell *matHeaderCellDef>Flow</th>
+          <td mat-cell *matCellDef="let row">{{ row.flowName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let row">
+            <app-status-badge
+              [label]="statusLabel(row.status)"
+              [executionStatus]="row.status"
+            ></app-status-badge>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="currentStep">
+          <th mat-header-cell *matHeaderCellDef>Step</th>
+          <td mat-cell *matCellDef="let row">{{ row.currentStep }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="attempts">
+          <th mat-header-cell *matHeaderCellDef>Attempts</th>
+          <td mat-cell *matCellDef="let row">{{ row.attempts }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="updatedAt">
+          <th mat-header-cell *matHeaderCellDef>Updated</th>
+          <td mat-cell *matCellDef="let row">{{ row.updatedAt | date: 'medium' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let row">
+            <a mat-button class="btn-with-icon open-link" [routerLink]="['/executions', row.flowName, row.instanceId]">
+              <span class="material-symbols-outlined">open_in_new</span>
+              Open
+            </a>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    </div>
+  }
+</section>

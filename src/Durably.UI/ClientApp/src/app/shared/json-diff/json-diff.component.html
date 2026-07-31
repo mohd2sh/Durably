@@ -1,0 +1,26 @@
+<div class="json-diff" [style.--diff-max-height]="maxHeight">
+  @if (isEmpty) {
+    <div class="empty">No input or output state to compare.</div>
+  } @else if (!hasChanges) {
+    <div class="empty success">No changes between input and output.</div>
+  } @else {
+    <div class="diff-header">
+      <span class="legend removed">− removed</span>
+      <span class="legend added">+ added</span>
+    </div>
+    <div class="diff-body" role="table" aria-label="State diff">
+      @for (line of lines; track $index) {
+        <div class="diff-row" [class]="line.type" role="row">
+          <span class="gutter old" role="cell">{{ line.oldLine ?? '' }}</span>
+          <span class="gutter new" role="cell">{{ line.newLine ?? '' }}</span>
+          <span class="prefix" aria-hidden="true">
+            @if (line.type === 'added') {+}
+            @else if (line.type === 'removed') {−}
+            @else {&nbsp;}
+          </span>
+          <pre class="content" role="cell">{{ line.text }}</pre>
+        </div>
+      }
+    </div>
+  }
+</div>

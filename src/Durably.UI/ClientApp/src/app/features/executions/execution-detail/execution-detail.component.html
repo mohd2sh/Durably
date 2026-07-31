@@ -1,0 +1,180 @@
+@if (isLoading) {
+  <div class="loading">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+} @else if (errorMessage) {
+  <p class="error">{{ errorMessage }}</p>
+} @else if (execution) {
+  <section class="page">
+    <header class="page-header">
+      <div>
+        <a mat-button class="btn-with-icon back-link" routerLink="/">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Back to list
+        </a>
+        <h1 class="page-title mono">{{ execution.instanceId }}</h1>
+        <p class="page-subtitle">{{ execution.flowName }}</p>
+      </div>
+      <app-status-badge
+        [label]="statusLabel(execution.status)"
+        [executionStatus]="execution.status"
+      ></app-status-badge>
+    </header>
+
+    <div class="panel-toggles">
+      <button
+        type="button"
+        class="panel-toggle"
+        [class.active]="showGraph"
+        (click)="togglePanel('graph')"
+      >
+        <span class="material-symbols-outlined">account_tree</span>
+        Step graph
+      </button>
+      <button
+        type="button"
+        class="panel-toggle"
+        [class.active]="showMetadata"
+        (click)="togglePanel('metadata')"
+      >
+        <span class="material-symbols-outlined">data_object</span>
+        Metadata
+      </button>
+      <button
+        type="button"
+        class="panel-toggle"
+        [class.active]="showLease"
+        (click)="togglePanel('lease')"
+      >
+        <span class="material-symbols-outlined">lock</span>
+        Lease
+      </button>
+    </div>
+
+    <div class="grid">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Execution</mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="facts">
+          <div><strong>Current step</strong><span>{{ execution.currentStep }}</span></div>
+          <div><strong>Attempts</strong><span>{{ execution.attempts }}</span></div>
+          <div><strong>Version</strong><span>{{ execution.version }}</span></div>
+          @if (execution.failedStep) {
+            <div><strong>Failed step</strong><span>{{ execution.failedStep }}</span></div>
+          }
+          @if (execution.errorMessage) {
+            <div class="full"><strong>Error</strong><span>{{ execution.errorMessage }}</span></div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      @if (showMetadata && execution.metadataJson) {
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Metadata</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <app-json-viewer [value]="execution.metadataJson" emptyLabel="No metadata"></app-json-viewer>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      @if (showLease) {
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Lease</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="facts">
+            <div><strong>Locked by</strong><span>{{ execution.lockedBy || '—' }}</span></div>
+            <div><strong>Locked until</strong><span>{{ execution.lockedUntil || '—' }}</span></div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+
+    @if (showGraph) {
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Step graph</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div #graphContainer class="graph"></div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <div class="trace-layout">
+      <mat-card class="timeline">
+        <mat-card-header>
+          <mat-card-title>Steps</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @for (trace of traces; track trace.timestamp + trace.stepKey + trace.attempt) {
+            <button
+              type="button"
+              class="trace-item"
+              [class.selected]="selectedTrace === trace"
+              (click)="selectTrace(trace)"
+            >
+              <div class="trace-top">
+                <div class="trace-title">{{ trace.stepKey }}</div>
+                <app-status-badge
+                  [label]="traceOutcomeLabel(trace.outcome)"
+                  [traceOutcome]="trace.outcome"
+                ></app-status-badge>
+              </div>
+              <div class="trace-meta">
+                Attempt {{ trace.attempt }} · {{ trace.durationMs }} ms
+              </div>
+            </button>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      @if (selectedTrace) {
+        <mat-card class="trace-detail">
+          <mat-card-header>
+            <mat-card-title>{{ selectedTrace.stepKey }}</mat-card-title>
+            <mat-card-subtitle>
+              Attempt {{ selectedTrace.attempt }} · {{ selectedTrace.durationMs }} ms
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            @if (selectedTrace.exceptionMessage) {
+              <p class="error">{{ selectedTrace.exceptionMessage }}</p>
+            }
+
+            <mat-button-toggle-group
+              class="payload-tabs"
+              [value]="payloadTab"
+              (change)="setPayloadTab($event.value)"
+              hideSingleSelectionIndicator
+            >
+              <mat-button-toggle value="diff">Diff</mat-button-toggle>
+              <mat-button-toggle value="output">Output</mat-button-toggle>
+              <mat-button-toggle value="input">Input</mat-button-toggle>
+            </mat-button-toggle-group>
+
+            @if (payloadTab === 'diff') {
+              <app-json-diff
+                [before]="selectedTrace.inputJson"
+                [after]="selectedTrace.outputJson"
+              ></app-json-diff>
+            } @else if (payloadTab === 'output') {
+              <app-json-viewer
+                [value]="selectedTrace.outputJson"
+                emptyLabel="No output state"
+              ></app-json-viewer>
+            } @else {
+              <app-json-viewer
+                [value]="selectedTrace.inputJson"
+                emptyLabel="No input state"
+              ></app-json-viewer>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  </section>
+}

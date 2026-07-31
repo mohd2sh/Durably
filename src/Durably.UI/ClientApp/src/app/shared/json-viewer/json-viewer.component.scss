@@ -1,0 +1,67 @@
+.json-viewer {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--code-bg);
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem 0.35rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--code-text) 12%, transparent);
+  background: color-mix(in srgb, var(--code-bg) 88%, white 12%);
+}
+
+.label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--code-text) 55%, transparent);
+}
+
+.copy-btn .material-symbols-outlined {
+  color: color-mix(in srgb, var(--code-text) 65%, transparent);
+  font-size: 1.1rem;
+}
+
+.empty {
+  padding: 1.25rem;
+  color: color-mix(in srgb, var(--code-text) 55%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.code {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  overflow: auto;
+  max-height: var(--viewer-max-height, 420px);
+  color: var(--code-text);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.tok-key {
+  color: var(--code-key);
+}
+
+.tok-string {
+  color: var(--code-string);
+}
+
+.tok-number {
+  color: var(--code-number);
+}
+
+.tok-boolean {
+  color: var(--code-boolean);
+}
+
+.tok-null {
+  color: var(--code-null);
+  font-style: italic;
+}

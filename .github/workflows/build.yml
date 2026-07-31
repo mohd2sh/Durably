@@ -1,0 +1,29 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Restore
+        run: dotnet restore Durably.sln
+
+      - name: Build src with analyzers
+        run: dotnet build Durably.sln -c Release --no-restore -p:SkipAngularBuild=true
+
+      - name: Test
+        run: dotnet test Durably.CI.slnf -c Release --no-build --verbosity normal

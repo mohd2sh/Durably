@@ -1,0 +1,159 @@
+# Durably editorconfig — .NET naming and code style for library projects
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{csproj,props,targets,json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+#### .NET coding conventions ####
+[*.cs]
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# Prefer early returns / less nesting — style preferences
+csharp_prefer_braces = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_using_directive_placement = outside_namespace:warning
+
+# Nullable / null-checking
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
+csharp_style_throw_expression = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+
+# var preferences
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Expression-bodied members
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+csharp_style_expression_bodied_properties = true:silent
+csharp_style_expression_bodied_accessors = true:silent
+
+# Naming — interfaces
+dotnet_naming_rule.interface_should_be_begins_with_i.severity = warning
+dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
+dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i
+
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.interface.required_modifiers =
+
+dotnet_naming_style.begins_with_i.required_prefix = I
+dotnet_naming_style.begins_with_i.required_suffix =
+dotnet_naming_style.begins_with_i.word_separator =
+dotnet_naming_style.begins_with_i.capitalization = pascal_case
+
+# Naming — types
+dotnet_naming_rule.types_should_be_pascal_case.severity = warning
+dotnet_naming_rule.types_should_be_pascal_case.symbols = types
+dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_symbols.types.applicable_kinds = class, struct, interface, enum, delegate
+dotnet_naming_symbols.types.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+
+dotnet_naming_style.pascal_case.required_prefix =
+dotnet_naming_style.pascal_case.required_suffix =
+dotnet_naming_style.pascal_case.word_separator =
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+# Naming — non-field members
+dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = warning
+dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
+dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_symbols.non_field_members.applicable_kinds = property, event, method
+dotnet_naming_symbols.non_field_members.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+
+# Naming — private fields
+dotnet_naming_rule.private_fields_should_be_underscore_camel.severity = suggestion
+dotnet_naming_rule.private_fields_should_be_underscore_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_underscore_camel.style = underscore_camel
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.required_suffix =
+dotnet_naming_style.underscore_camel.word_separator =
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+# Naming — async methods should end with Async (CA1711 / IDE naming via analyzer)
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1848.severity = suggestion
+dotnet_diagnostic.CA1812.severity = suggestion
+dotnet_diagnostic.CA1000.severity = suggestion
+dotnet_diagnostic.CA1062.severity = suggestion
+dotnet_diagnostic.CA1304.severity = warning
+dotnet_diagnostic.CA1305.severity = warning
+dotnet_diagnostic.CA1307.severity = suggestion
+# Fluent DSL uses Step/When intentionally; do not rename for other languages
+dotnet_diagnostic.CA1716.severity = none
+dotnet_diagnostic.CA1720.severity = warning
+# Variance changes on public contracts are breaking for a shipped library
+dotnet_diagnostic.S3246.severity = none
+dotnet_diagnostic.S4017.severity = suggestion
+dotnet_diagnostic.CA1805.severity = suggestion
+dotnet_diagnostic.CA1822.severity = suggestion
+dotnet_diagnostic.CA1859.severity = suggestion
+dotnet_diagnostic.CA1860.severity = suggestion
+dotnet_diagnostic.CA2000.severity = warning
+dotnet_diagnostic.CA2208.severity = warning
+dotnet_diagnostic.CA2211.severity = warning
+
+# Sonar — cognitive complexity
+dotnet_diagnostic.S3776.severity = warning
+dotnet_diagnostic.S2486.severity = warning
+dotnet_diagnostic.S108.severity = warning
+dotnet_diagnostic.S1135.severity = suggestion
+dotnet_diagnostic.S125.severity = suggestion
+dotnet_diagnostic.S107.severity = suggestion
+dotnet_diagnostic.S138.severity = suggestion
+dotnet_diagnostic.S1451.severity = none
+dotnet_diagnostic.S2325.severity = suggestion
+dotnet_diagnostic.S3881.severity = warning
+dotnet_diagnostic.S3966.severity = warning
+dotnet_diagnostic.S6966.severity = suggestion
+
+# Optional-parameter overloads are intentional on the fluent/engine surface
+dotnet_diagnostic.RS0026.severity = none
+dotnet_diagnostic.RS0027.severity = none
+dotnet_diagnostic.S1450.severity = suggestion
+dotnet_diagnostic.S108.severity = suggestion
+dotnet_diagnostic.CS8604.severity = warning
+
+# XML docs — keep enabled but don't fail on missing member docs for internals
+dotnet_diagnostic.CS1591.severity = none
+# Test method names use underscores by convention
+[**/tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+# Empty marker types for Flow.For<TFlow, TState>() are intentional
+dotnet_diagnostic.S2094.severity = none
+dotnet_diagnostic.S3928.severity = suggestion
+dotnet_diagnostic.CA2211.severity = suggestion
+
+# Generated / migrations
+[**/Migrations/**.cs]
+generated_code = true
+dotnet_diagnostic.S3776.severity = none
+dotnet_diagnostic.CA1707.severity = none
+
+[**/obj/**]
+generated_code = true
+
+[**/bin/**]
+generated_code = true

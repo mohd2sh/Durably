@@ -1,0 +1,89 @@
+.json-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  overflow: hidden;
+}
+
+.empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.empty.success {
+  color: var(--success);
+}
+
+.diff-header {
+  display: flex;
+  gap: 1rem;
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.legend.added {
+  color: var(--diff-add-text);
+}
+
+.legend.removed {
+  color: var(--diff-del-text);
+}
+
+.diff-body {
+  max-height: var(--diff-max-height, 480px);
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 3rem 3rem 1.25rem 1fr;
+  min-width: max-content;
+  width: 100%;
+}
+
+.diff-row.added {
+  background: var(--diff-add-bg);
+  color: var(--diff-add-text);
+}
+
+.diff-row.removed {
+  background: var(--diff-del-bg);
+  color: var(--diff-del-text);
+}
+
+.diff-row.context {
+  color: var(--text);
+}
+
+.gutter {
+  text-align: right;
+  padding: 0 0.5rem;
+  color: var(--diff-gutter);
+  user-select: none;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
+}
+
+.prefix {
+  text-align: center;
+  user-select: none;
+  font-weight: 600;
+}
+
+.content {
+  margin: 0;
+  padding: 0 0.75rem 0 0.25rem;
+  white-space: pre;
+  overflow: visible;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+}
