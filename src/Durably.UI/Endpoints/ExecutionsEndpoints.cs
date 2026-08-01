@@ -1,18 +1,32 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Options;
 
 namespace Durably;
 
 internal static class ExecutionsEndpoints
 {
-    public static RouteGroupBuilder MapExecutionsEndpoints(this RouteGroupBuilder group)
+    public static IReadOnlyList<IEndpointConventionBuilder> MapExecutionsEndpoints(
+        this IEndpointRouteBuilder endpoints,
+        string apiPath)
     {
-        group.MapGet($"/{DurablyUIRoutes.Executions}", SearchExecutionsAsync);
-        group.MapGet($"/{DurablyUIRoutes.Executions}/{{flowName}}/{{instanceId}}", GetExecutionAsync);
-        group.MapGet($"/{DurablyUIRoutes.Executions}/{{flowName}}/{{instanceId}}/traces", GetTracesAsync);
-        return group;
+        if (endpoints is null)
+        {
+            throw new ArgumentNullException(nameof(endpoints));
+        }
+
+        if (string.IsNullOrWhiteSpace(apiPath))
+        {
+            throw new ArgumentException("API path is required.", nameof(apiPath));
+        }
+
+        var root = $"{apiPath}/{DurablyUIRoutes.Executions}";
+        return
+        [
+            endpoints.MapGet(root, SearchExecutionsAsync).ExcludeFromApiDescription(),
+            endpoints.MapGet($"{root}/{{flowName}}/{{instanceId}}", GetExecutionAsync).ExcludeFromApiDescription(),
+            endpoints.MapGet($"{root}/{{flowName}}/{{instanceId}}/traces", GetTracesAsync).ExcludeFromApiDescription()
+        ];
     }
 
     private static async Task<IResult> SearchExecutionsAsync(
