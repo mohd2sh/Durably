@@ -30,12 +30,20 @@ public static class DurablyUIEndpointRouteBuilderExtensions
         var prefix = RoutePrefixNormalizer.Normalize(routePrefix ?? options.RoutePrefix);
         var apiPath = $"{prefix}/{DurablyUIRoutes.ApiRoot}";
 
-        var apiGroup = endpoints.MapGroup(apiPath);
-        apiGroup.ExcludeFromDescription();
-        apiGroup.MapExecutionsEndpoints();
-
+        var apiBuilders = endpoints.MapExecutionsEndpoints(apiPath);
         var spaBuilders = MapSpa(endpoints, prefix, apiPath);
-        return new CompositeEndpointConventionBuilder([apiGroup, .. spaBuilders]);
+        var all = new IEndpointConventionBuilder[apiBuilders.Count + spaBuilders.Count];
+        for (var i = 0; i < apiBuilders.Count; i++)
+        {
+            all[i] = apiBuilders[i];
+        }
+
+        for (var i = 0; i < spaBuilders.Count; i++)
+        {
+            all[apiBuilders.Count + i] = spaBuilders[i];
+        }
+
+        return new CompositeEndpointConventionBuilder(all);
     }
 
     private static IReadOnlyList<IEndpointConventionBuilder> MapSpa(
@@ -57,7 +65,7 @@ public static class DurablyUIEndpointRouteBuilderExtensions
 
         builders.Add(
             endpoints.MapGet(prefix, () => Results.Redirect($"{prefix}/index.html"))
-                .ExcludeFromDescription());
+                .ExcludeFromApiDescription());
 
         builders.Add(
             endpoints.MapGet($"{prefix}/{{**spaPath}}", async context =>
@@ -98,7 +106,7 @@ public static class DurablyUIEndpointRouteBuilderExtensions
 
                 await context.Response.SendFileAsync(fileInfo.PhysicalPath!).ConfigureAwait(false);
             })
-            .ExcludeFromDescription());
+            .ExcludeFromApiDescription());
 
         return builders;
     }
