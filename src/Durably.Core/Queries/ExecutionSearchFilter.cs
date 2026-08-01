@@ -22,6 +22,12 @@ internal static class ExecutionSearchFilter
             query = query.Where(record => ContainsIgnoreCase(record.InstanceId, instanceId));
         }
 
+        if (!string.IsNullOrWhiteSpace(criteria.RunId))
+        {
+            var runId = criteria.RunId!;
+            query = query.Where(record => ContainsIgnoreCase(record.RunId, runId));
+        }
+
         if (criteria.From is not null)
         {
             query = query.Where(record => record.UpdatedAt >= criteria.From);

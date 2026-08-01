@@ -4,6 +4,8 @@ public sealed class ExecutionDetail
 {
     public string FlowName { get; set; } = string.Empty;
 
+    public string RunId { get; set; } = string.Empty;
+
     public string InstanceId { get; set; } = string.Empty;
 
     public ExecutionStatus Status { get; set; }

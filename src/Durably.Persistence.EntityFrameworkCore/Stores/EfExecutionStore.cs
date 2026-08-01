@@ -14,15 +14,54 @@ internal sealed class EfExecutionStore : IExecutionStore
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
-    public async Task<ExecutionRecord?> LoadAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    public async Task<ExecutionRecord?> LoadAsync(string flowName, string runId, CancellationToken cancellationToken)
     {
         await EfDatabaseInitializer.EnsureReadyAsync(_contextFactory, _options, cancellationToken).ConfigureAwait(false);
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         var entity = await context.Executions
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                e => e.FlowName == flowName && e.InstanceId == instanceId,
+                e => e.FlowName == flowName && e.RunId == runId,
                 cancellationToken)
+            .ConfigureAwait(false);
+
+        return entity is null ? null : ExecutionMapper.ToRecord(entity);
+    }
+
+    public async Task<ExecutionRecord?> FindOpenAsync(
+        string flowName,
+        string instanceId,
+        CancellationToken cancellationToken)
+    {
+        await EfDatabaseInitializer.EnsureReadyAsync(_contextFactory, _options, cancellationToken).ConfigureAwait(false);
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var pending = (int)ExecutionStatus.Pending;
+        var running = (int)ExecutionStatus.Running;
+        var entity = await context.Executions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                e => e.FlowName == flowName
+                    && e.InstanceId == instanceId
+                    && (e.Status == pending || e.Status == running),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return entity is null ? null : ExecutionMapper.ToRecord(entity);
+    }
+
+    public async Task<ExecutionRecord?> LoadLatestAsync(
+        string flowName,
+        string instanceId,
+        CancellationToken cancellationToken)
+    {
+        await EfDatabaseInitializer.EnsureReadyAsync(_contextFactory, _options, cancellationToken).ConfigureAwait(false);
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var entity = await context.Executions
+            .AsNoTracking()
+            .Where(e => e.FlowName == flowName && e.InstanceId == instanceId)
+            .OrderByDescending(e => e.UpdatedAt)
+            .ThenByDescending(e => e.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return entity is null ? null : ExecutionMapper.ToRecord(entity);
@@ -45,7 +84,7 @@ internal sealed class EfExecutionStore : IExecutionStore
         }
         catch (DbUpdateException ex) when (EfPersistenceExceptionHelper.IsDuplicateKey(ex))
         {
-            throw new ExecutionAlreadyExistsException(record.FlowName, record.InstanceId);
+            throw new ExecutionAlreadyExistsException(record.FlowName, record.InstanceId, record.RunId);
         }
     }
 
@@ -74,7 +113,7 @@ internal sealed class EfExecutionStore : IExecutionStore
 
         var affected = await context.Executions
             .Where(e => e.FlowName == record.FlowName
-                && e.InstanceId == record.InstanceId
+                && e.RunId == record.RunId
                 && e.Version == expectedVersion
                 && e.LockedBy == runnerId)
             .ExecuteUpdateAsync(
@@ -94,13 +133,13 @@ internal sealed class EfExecutionStore : IExecutionStore
 
         if (affected == 0)
         {
-            var current = await LoadAsync(record.FlowName, record.InstanceId, cancellationToken).ConfigureAwait(false);
+            var current = await LoadAsync(record.FlowName, record.RunId, cancellationToken).ConfigureAwait(false);
             if (current is null || string.Equals(current.LockedBy, runnerId, StringComparison.Ordinal))
             {
-                throw new ConcurrencyConflictException(record.FlowName, record.InstanceId);
+                throw new ConcurrencyConflictException(record.FlowName, record.RunId, record.InstanceId);
             }
 
-            throw new LeaseLostException(record.FlowName, record.InstanceId);
+            throw new LeaseLostException(record.FlowName, record.RunId, record.InstanceId);
         }
 
         record.Version += 1;
@@ -110,7 +149,7 @@ internal sealed class EfExecutionStore : IExecutionStore
 
     public async Task<bool> TryAcquireLeaseAsync(
         string flowName,
-        string instanceId,
+        string runId,
         string runnerId,
         DateTimeOffset leaseUntil,
         CancellationToken cancellationToken)
@@ -128,7 +167,7 @@ internal sealed class EfExecutionStore : IExecutionStore
 
         var affected = await context.Executions
             .Where(e => e.FlowName == flowName
-                && e.InstanceId == instanceId
+                && e.RunId == runId
                 && (e.LockedUntil == null || e.LockedUntil <= now || e.LockedBy == runnerId))
             .ExecuteUpdateAsync(
                 setters => setters
@@ -143,7 +182,7 @@ internal sealed class EfExecutionStore : IExecutionStore
 
     public async Task ReleaseLeaseAsync(
         string flowName,
-        string instanceId,
+        string runId,
         string runnerId,
         CancellationToken cancellationToken)
     {
@@ -156,7 +195,7 @@ internal sealed class EfExecutionStore : IExecutionStore
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
 
         await context.Executions
-            .Where(e => e.FlowName == flowName && e.InstanceId == instanceId && e.LockedBy == runnerId)
+            .Where(e => e.FlowName == flowName && e.RunId == runId && e.LockedBy == runnerId)
             .ExecuteUpdateAsync(
                 setters => setters
                     .SetProperty(e => e.LockedBy, (string?)null)

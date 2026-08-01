@@ -6,6 +6,8 @@ internal sealed class TraceEntity
 
     public string FlowName { get; set; } = string.Empty;
 
+    public string RunId { get; set; } = string.Empty;
+
     public string InstanceId { get; set; } = string.Empty;
 
     public string StepKey { get; set; } = string.Empty;

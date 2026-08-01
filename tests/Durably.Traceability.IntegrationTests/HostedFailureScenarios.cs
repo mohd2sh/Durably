@@ -99,12 +99,12 @@ internal sealed class RecordingTraceStore : ITraceStore
         return Task.CompletedTask;
     }
 
-    public Task<IReadOnlyList<TraceRecord>> LoadAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<TraceRecord>> LoadAsync(string flowName, string runId, CancellationToken cancellationToken)
     {
         lock (_gate)
         {
             var matches = _all
-                .Where(r => r.FlowName == flowName && r.InstanceId == instanceId)
+                .Where(r => r.FlowName == flowName && r.RunId == runId)
                 .Select(Clone)
                 .ToList();
             return Task.FromResult<IReadOnlyList<TraceRecord>>(matches);
@@ -114,6 +114,7 @@ internal sealed class RecordingTraceStore : ITraceStore
     private static TraceRecord Clone(TraceRecord source) => new()
     {
         FlowName = source.FlowName,
+        RunId = source.RunId,
         InstanceId = source.InstanceId,
         StepKey = source.StepKey,
         Attempt = source.Attempt,

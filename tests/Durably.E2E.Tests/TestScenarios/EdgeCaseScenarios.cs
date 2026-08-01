@@ -13,23 +13,25 @@ public abstract class EdgeCaseScenarios<TFixture> : ScenarioTestsBase<TFixture>
     }
 
     [Fact]
-    public async Task Completed_instance_second_start_is_idempotent()
+    public async Task Completed_instance_second_start_creates_new_run()
     {
         await ResetAsync();
         var (flow, counters) = ScenarioFlows.CreateIdempotent();
 
         await using var host = await StartHostAsync(d => d.AddFlow(flow));
 
-        await host.Engine.StartAsync(flow, "id-1", new OrderState());
+        var first = await host.Engine.StartAsync(flow, "id-1", new OrderState());
         await host.WaitForStatusAsync(flow.Name, "id-1", ExecutionStatus.Completed);
         Assert.Equal(1, counters.Generate);
 
+        // Completed is not "open", so starting again creates a brand new run (new RunId)
+        // rather than being a no-op against the completed one.
         var second = await host.Engine.StartAsync(flow, "id-1", new OrderState());
-        Assert.Equal(FlowStartOutcome.AlreadyExists, second.Outcome);
-        Assert.Equal(ExecutionStatus.Completed, second.Status);
+        Assert.Equal(FlowStartOutcome.Created, second.Outcome);
+        Assert.NotEqual(first.RunId, second.RunId);
 
-        await Task.Delay(TestLimits.MediumDelay);
-        Assert.Equal(1, counters.Generate);
+        await host.WaitForStatusAsync(flow.Name, "id-1", ExecutionStatus.Completed);
+        Assert.Equal(2, counters.Generate);
     }
 
     [Fact]
@@ -69,9 +71,11 @@ public abstract class EdgeCaseScenarios<TFixture> : ScenarioTestsBase<TFixture>
         await ResetAsync();
         var store = NewExecutionStore();
         var now = DateTimeOffset.UtcNow;
+        var runId = Guid.NewGuid().ToString("N");
         await store.CreateAsync(new ExecutionRecord
         {
             FlowName = "Missing.Flow",
+            RunId = runId,
             InstanceId = "u1",
             Status = ExecutionStatus.Pending,
             CurrentStep = 0,
@@ -85,14 +89,14 @@ public abstract class EdgeCaseScenarios<TFixture> : ScenarioTestsBase<TFixture>
         await using var host = await StartHostAsync(_ => { }, o => o.WorkerEnabled = false);
 
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration);
-        Assert.True(await host.Store.TryAcquireLeaseAsync("Missing.Flow", "u1", "runner", leaseUntil, CancellationToken.None));
-        var record = await host.Store.LoadAsync("Missing.Flow", "u1", CancellationToken.None);
+        Assert.True(await host.Store.TryAcquireLeaseAsync("Missing.Flow", runId, "runner", leaseUntil, CancellationToken.None));
+        var record = await host.Store.LoadAsync("Missing.Flow", runId, CancellationToken.None);
 
         var result = await host.Processor.ProcessAsync(record!, "runner", TestLimits.DefaultLeaseDuration);
 
         Assert.Equal(FlowStatus.Failed, result.Status);
         Assert.Contains("not registered", result.Error!.Message, StringComparison.OrdinalIgnoreCase);
-        var status = await host.Store.LoadAsync("Missing.Flow", "u1", CancellationToken.None);
+        var status = await host.Store.LoadAsync("Missing.Flow", runId, CancellationToken.None);
         Assert.Equal(ExecutionStatus.Failed, status!.Status);
     }
 }

@@ -91,26 +91,26 @@ public sealed class EngineTestHarness
             return await Processor.ProcessAsync(match, RunnerId, LeaseDuration);
         }
 
-        var record = await Store.LoadAsync(flowName, instanceId, CancellationToken.None);
+        var record = await Store.LoadLatestAsync(flowName, instanceId, CancellationToken.None);
         if (record is null)
         {
             throw new InvalidOperationException($"No execution found for flow '{flowName}' instance '{instanceId}'.");
         }
 
-        if (!await Store.TryAcquireLeaseAsync(flowName, instanceId, RunnerId, leaseUntil, CancellationToken.None))
+        if (!await Store.TryAcquireLeaseAsync(flowName, record.RunId, RunnerId, leaseUntil, CancellationToken.None))
         {
             return FlowRunResult.AlreadyRunning();
         }
 
-        var leased = await Store.LoadAsync(flowName, instanceId, CancellationToken.None)
+        var leased = await Store.LoadAsync(flowName, record.RunId, CancellationToken.None)
             ?? throw new InvalidOperationException("Execution disappeared after lease acquisition.");
         return await Processor.ProcessAsync(leased, RunnerId, LeaseDuration);
     }
 
-    /// <summary>Reloads persisted state for an instance, since processing always runs against a fresh deserialized copy.</summary>
+    /// <summary>Reloads persisted state for the latest run of an instance, since processing always runs against a fresh deserialized copy.</summary>
     public async Task<TState> LoadStateAsync<TState>(string flowName, string instanceId) where TState : class, new()
     {
-        var record = await Store.LoadAsync(flowName, instanceId, CancellationToken.None)
+        var record = await Store.LoadLatestAsync(flowName, instanceId, CancellationToken.None)
             ?? throw new InvalidOperationException($"No execution found for flow '{flowName}' instance '{instanceId}'.");
         return (TState)new JsonStateSerializer().Deserialize(record.ContextJson, typeof(TState))!;
     }

@@ -17,6 +17,7 @@ internal static class ExecutionRecordFactory
         return new ExecutionRecord
         {
             FlowName = flowName,
+            RunId = Guid.NewGuid().ToString("N"),
             InstanceId = instanceId,
             Status = status,
             CurrentStep = currentStep,

@@ -7,6 +7,7 @@ public static class IntegrationTestConstants
     public const string OtherRunnerId = "ef-int-other";
     public const string FlowName = "orders";
     public const string InstanceId = "order-1";
+    public const string RunId = "run-order-1";
     public const string EmptyContextJson = "{}";
     public const string ContextWithValue = "{\"value\":1}";
 

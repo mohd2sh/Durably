@@ -26,7 +26,7 @@ public sealed class StepPathHashTests
             .Step("finalize", (s, _) => { s.Finalized = true; return Task.CompletedTask; });
 
         await harness.StartAndProcessAsync(v1, "insert-1", new OrderState());
-        var mid = await harness.Store.LoadAsync(v1.Name, "insert-1", CancellationToken.None);
+        var mid = await harness.Store.LoadLatestAsync(v1.Name, "insert-1", CancellationToken.None);
         Assert.Equal(2, mid!.CurrentStep); // failed on email, still at email index
         Assert.NotNull(mid.StepPathHash);
 
@@ -37,12 +37,12 @@ public sealed class StepPathHashTests
         mid.CurrentStep = 3;
         mid.StepPathHash = StepPathHasher.Append(mid.StepPathHash!, "email");
         var leaseUntil = DateTimeOffset.UtcNow.Add(harness.LeaseDuration);
-        Assert.True(await harness.Store.TryAcquireLeaseAsync(v1.Name, "insert-1", harness.RunnerId, leaseUntil, CancellationToken.None));
-        var leased = await harness.Store.LoadAsync(v1.Name, "insert-1", CancellationToken.None);
+        Assert.True(await harness.Store.TryAcquireLeaseAsync(v1.Name, mid.RunId, harness.RunnerId, leaseUntil, CancellationToken.None));
+        var leased = await harness.Store.LoadAsync(v1.Name, mid.RunId, CancellationToken.None);
         mid.Version = leased!.Version;
         mid.LockedBy = leased.LockedBy;
         await harness.Store.SaveCheckpointAsync(mid, harness.RunnerId, leaseUntil, CancellationToken.None);
-        await harness.Store.ReleaseLeaseAsync(v1.Name, "insert-1", harness.RunnerId, CancellationToken.None);
+        await harness.Store.ReleaseLeaseAsync(v1.Name, mid.RunId, harness.RunnerId, CancellationToken.None);
 
         // Same flow name, insert validate between enrich and email
         var v2 = Flow.For<PathHashFlow, OrderState>()
@@ -59,7 +59,7 @@ public sealed class StepPathHashTests
         // Assert
         Assert.Equal(FlowStatus.Failed, result.Status);
         Assert.Equal("_definition-mismatch", result.FailedStep);
-        var status = await harness.Store.LoadAsync(v1.Name, "insert-1", CancellationToken.None);
+        var status = await harness.Store.LoadAsync(v1.Name, mid.RunId, CancellationToken.None);
         Assert.Equal(ExecutionStatus.Failed, status!.Status);
         Assert.Equal("_definition-mismatch", status.FailedStep);
         Assert.Contains("definition mismatch", status.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
@@ -86,7 +86,7 @@ public sealed class StepPathHashTests
             });
 
         await harness.StartAndProcessAsync(v1, "append-1", new OrderState());
-        var mid = await harness.Store.LoadAsync(v1.Name, "append-1", CancellationToken.None);
+        var mid = await harness.Store.LoadLatestAsync(v1.Name, "append-1", CancellationToken.None);
         Assert.Equal(2, mid!.CurrentStep);
         Assert.NotNull(mid.StepPathHash);
 
@@ -102,7 +102,7 @@ public sealed class StepPathHashTests
 
         // Assert
         Assert.Equal(FlowStatus.Completed, result.Status);
-        var done = await harness.Store.LoadAsync(v1.Name, "append-1", CancellationToken.None);
+        var done = await harness.Store.LoadAsync(v1.Name, mid.RunId, CancellationToken.None);
         Assert.Equal(ExecutionStatus.Completed, done!.Status);
         Assert.True((await harness.LoadStateAsync<OrderState>(v1.Name, "append-1")).Finalized);
         Assert.Equal(4, done.CurrentStep);
@@ -119,9 +119,11 @@ public sealed class StepPathHashTests
             .Step("b", (s, _) => { s.Finalized = true; return Task.CompletedTask; });
         harness.Register(flow);
 
+        var runId = Guid.NewGuid().ToString("N");
         await harness.Store.CreateAsync(new ExecutionRecord
         {
             FlowName = flow.Name,
+            RunId = runId,
             InstanceId = "legacy-1",
             Status = ExecutionStatus.Running,
             CurrentStep = 1,
@@ -138,7 +140,7 @@ public sealed class StepPathHashTests
 
         // Assert
         Assert.Equal(FlowStatus.Completed, result.Status);
-        var done = await harness.Store.LoadAsync(flow.Name, "legacy-1", CancellationToken.None);
+        var done = await harness.Store.LoadAsync(flow.Name, runId, CancellationToken.None);
         Assert.Equal(ExecutionStatus.Completed, done!.Status);
         Assert.Equal(StepPathHasher.ComputePrefix(new[] { "a", "b" }, 2), done.StepPathHash);
     }
@@ -152,9 +154,11 @@ public sealed class StepPathHashTests
             .Step("only", (_, _) => Task.CompletedTask);
         harness.Register(flow);
 
+        var runId = Guid.NewGuid().ToString("N");
         await harness.Store.CreateAsync(new ExecutionRecord
         {
             FlowName = flow.Name,
+            RunId = runId,
             InstanceId = "trunc-1",
             Status = ExecutionStatus.Running,
             CurrentStep = 5,
@@ -172,7 +176,7 @@ public sealed class StepPathHashTests
         // Assert
         Assert.Equal(FlowStatus.Failed, result.Status);
         Assert.Equal("_definition-mismatch", result.FailedStep);
-        var status = await harness.Store.LoadAsync(flow.Name, "trunc-1", CancellationToken.None);
+        var status = await harness.Store.LoadAsync(flow.Name, runId, CancellationToken.None);
         Assert.Contains("exceeds", status!.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -193,7 +197,7 @@ public sealed class StepPathHashTests
 
         // Assert
         Assert.Equal(FlowStatus.Completed, result.Status);
-        var done = await harness.Store.LoadAsync(flow.Name, "choose-1", CancellationToken.None);
+        var done = await harness.Store.LoadLatestAsync(flow.Name, "choose-1", CancellationToken.None);
         Assert.Equal(StepPathHasher.ComputePrefix(new[] { "arm-a", "arm-b", "post" }, 3), done!.StepPathHash);
     }
 

@@ -25,9 +25,17 @@ public interface IFlowEngine
         CancellationToken cancellationToken = default)
         where TState : class, new();
 
+    /// <summary>Status of the latest run for this instance, or null if none.</summary>
     Task<ExecutionStatusInfo?> GetStatusAsync(
         string flowName,
         string instanceId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Status of a specific run.</summary>
+    Task<ExecutionStatusInfo?> GetStatusAsync(
+        string flowName,
+        string instanceId,
+        string runId,
         CancellationToken cancellationToken = default);
 
     Task<ExecutionStatusInfo?> GetStatusAsync<TFlow>(

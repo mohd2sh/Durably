@@ -8,6 +8,8 @@ public sealed class ExecutionSearchCriteria
 
     public string? InstanceId { get; set; }
 
+    public string? RunId { get; set; }
+
     public DateTimeOffset? From { get; set; }
 
     public DateTimeOffset? To { get; set; }

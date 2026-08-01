@@ -44,6 +44,7 @@ internal static class TraceHostFactory
     public static TraceRecord Sample(string flow, string instance, string step) => new()
     {
         FlowName = flow,
+        RunId = instance,
         InstanceId = instance,
         StepKey = step,
         Attempt = 1,
@@ -79,6 +80,6 @@ internal sealed class FailThenSucceedTraceStore : ITraceStore
         return _inner.AppendAsync(records, cancellationToken);
     }
 
-    public Task<IReadOnlyList<TraceRecord>> LoadAsync(string flowName, string instanceId, CancellationToken cancellationToken)
-        => _inner.LoadAsync(flowName, instanceId, cancellationToken);
+    public Task<IReadOnlyList<TraceRecord>> LoadAsync(string flowName, string runId, CancellationToken cancellationToken)
+        => _inner.LoadAsync(flowName, runId, cancellationToken);
 }

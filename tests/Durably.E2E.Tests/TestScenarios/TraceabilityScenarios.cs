@@ -25,9 +25,9 @@ public abstract class TraceabilityScenarios<TFixture> : ScenarioTestsBase<TFixtu
             o => o.EnableTraceability = true);
 
         await host.Engine.StartAsync(flow, "trace-1", new OrderState());
-        await host.WaitForStatusAsync(flow.Name, "trace-1", ExecutionStatus.Completed);
+        var status = await host.WaitForStatusAsync(flow.Name, "trace-1", ExecutionStatus.Completed);
 
-        var traces = await ScenarioWait.WaitForTracesAsync(host.TraceStore!, flow.Name, "trace-1", minCount: 3);
+        var traces = await ScenarioWait.WaitForTracesAsync(host.TraceStore!, flow.Name, status.RunId, minCount: 3);
 
         Assert.Contains(traces, t => t.StepKey == "generate" && t.Outcome == TraceOutcome.Succeeded);
         Assert.Contains(traces, t => t.StepKey == "email" && t.Outcome == TraceOutcome.Succeeded);

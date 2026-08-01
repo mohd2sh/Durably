@@ -30,10 +30,11 @@ public static class ScenarioWait
             $"Timed out waiting for '{flowName}/{instanceId}' to become {status}. Last status: {actual}.");
     }
 
+    /// <summary>Waits for trace records for a specific run id.</summary>
     public static async Task<IReadOnlyList<TraceRecord>> WaitForTracesAsync(
         ITraceStore traceStore,
         string flowName,
-        string instanceId,
+        string runId,
         int minCount,
         TimeSpan? timeout = null,
         TimeSpan? pollInterval = null)
@@ -43,7 +44,7 @@ public static class ScenarioWait
 
         while (DateTime.UtcNow < deadline)
         {
-            var traces = await traceStore.LoadAsync(flowName, instanceId, CancellationToken.None);
+            var traces = await traceStore.LoadAsync(flowName, runId, CancellationToken.None);
             if (traces.Count >= minCount)
             {
                 return traces;
@@ -52,9 +53,10 @@ public static class ScenarioWait
             await Task.Delay(delay);
         }
 
-        return await traceStore.LoadAsync(flowName, instanceId, CancellationToken.None);
+        return await traceStore.LoadAsync(flowName, runId, CancellationToken.None);
     }
 
+    /// <summary>Loads deserialized state for the latest run of an instance.</summary>
     public static async Task<TState> LoadStateAsync<TState>(
         IExecutionStore store,
         IStateSerializer serializer,
@@ -62,7 +64,7 @@ public static class ScenarioWait
         string instanceId)
         where TState : class, new()
     {
-        var record = await store.LoadAsync(flowName, instanceId, CancellationToken.None)
+        var record = await store.LoadLatestAsync(flowName, instanceId, CancellationToken.None)
             ?? throw new InvalidOperationException($"No execution for '{flowName}/{instanceId}'.");
         return (TState)serializer.Deserialize(record.ContextJson, typeof(TState))!;
     }

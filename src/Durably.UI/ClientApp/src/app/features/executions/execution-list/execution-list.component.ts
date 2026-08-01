@@ -37,6 +37,7 @@ export class ExecutionListComponent implements OnInit {
 
   readonly displayedColumns = [
     'instanceId',
+    'runId',
     'flowName',
     'status',
     'currentStep',
@@ -47,6 +48,7 @@ export class ExecutionListComponent implements OnInit {
 
   readonly statusOptions = [
     { label: 'Any', value: null },
+    { label: 'Pending', value: ExecutionStatus.Pending },
     { label: 'Running', value: ExecutionStatus.Running },
     { label: 'Completed', value: ExecutionStatus.Completed },
     { label: 'Failed', value: ExecutionStatus.Failed }

@@ -7,6 +7,8 @@ public sealed class TraceRecord
 {
     public string FlowName { get; set; } = string.Empty;
 
+    public string RunId { get; set; } = string.Empty;
+
     public string InstanceId { get; set; } = string.Empty;
 
     public string StepKey { get; set; } = string.Empty;

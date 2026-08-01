@@ -49,6 +49,6 @@ public sealed class FlowEngineUnitTests
 
         // Assert
         Assert.Equal(1, results.Count(r => r.Outcome == FlowStartOutcome.Created));
-        Assert.Equal(concurrentStarts - 1, results.Count(r => r.Outcome == FlowStartOutcome.AlreadyExists));
+        Assert.Equal(concurrentStarts - 1, results.Count(r => r.Outcome == FlowStartOutcome.Conflict));
     }
 }

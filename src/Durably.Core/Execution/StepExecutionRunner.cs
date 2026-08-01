@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Durably.Execution;
+
 /// <summary>Runs a single step with retry, timeout, and tracing.</summary>
 internal sealed class StepExecutionRunner
 {
@@ -29,6 +30,7 @@ internal sealed class StepExecutionRunner
     public async Task<FlowRunResult?> ExecuteWithRetryAsync<TState>(
         string flowName,
         string instanceId,
+        string runId,
         StepNode<TState> node,
         TState state,
         ExecutionRecord record,
@@ -43,7 +45,7 @@ internal sealed class StepExecutionRunner
             attempt++;
             var inputJson = _serializer.Serialize(state!);
             var stopwatch = Stopwatch.StartNew();
-            var context = new StepContext(flowName, instanceId, node.Key, attempt);
+            var context = new StepContext(flowName, instanceId, runId, node.Key, attempt);
             try
             {
                 await RunNodeAsync(node, state, context, cancellationToken).ConfigureAwait(false);
@@ -51,6 +53,7 @@ internal sealed class StepExecutionRunner
                 _traces.EmitSuccess(
                     flowName,
                     instanceId,
+                    runId,
                     node.Key,
                     attempt,
                     inputJson,
@@ -70,6 +73,7 @@ internal sealed class StepExecutionRunner
                     if (!await RetryOrLoseLeaseAsync(
                             flowName,
                             instanceId,
+                            runId,
                             node,
                             attempt,
                             inputJson,
@@ -89,6 +93,7 @@ internal sealed class StepExecutionRunner
                 _traces.EmitFailure(
                     flowName,
                     instanceId,
+                    runId,
                     node.Key,
                     attempt,
                     inputJson,
@@ -115,6 +120,7 @@ internal sealed class StepExecutionRunner
     private async Task<bool> RetryOrLoseLeaseAsync<TState>(
         string flowName,
         string instanceId,
+        string runId,
         StepNode<TState> node,
         int attempt,
         string inputJson,
@@ -124,10 +130,10 @@ internal sealed class StepExecutionRunner
         TimeSpan leaseDuration,
         CancellationToken cancellationToken)
     {
-        _traces.EmitFailure(flowName, instanceId, node.Key, attempt, inputJson, durationMs, ex.Message);
+        _traces.EmitFailure(flowName, instanceId, runId, node.Key, attempt, inputJson, durationMs, ex.Message);
         _logger.LogDebug(ex, "Step {StepKey} attempt {Attempt} failed; retrying.", node.Key, attempt);
 
-        if (!await RenewLeaseAsync(flowName, instanceId, runnerId, leaseDuration, cancellationToken).ConfigureAwait(false))
+        if (!await RenewLeaseAsync(flowName, runId, runnerId, leaseDuration, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }
@@ -139,7 +145,7 @@ internal sealed class StepExecutionRunner
         }
 
         await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-        return await RenewLeaseAsync(flowName, instanceId, runnerId, leaseDuration, cancellationToken).ConfigureAwait(false);
+        return await RenewLeaseAsync(flowName, runId, runnerId, leaseDuration, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<FlowRunResult> HandleTerminalFailureAsync<TState>(
@@ -182,13 +188,13 @@ internal sealed class StepExecutionRunner
 
     private async Task<bool> RenewLeaseAsync(
         string flowName,
-        string instanceId,
+        string runId,
         string runnerId,
         TimeSpan leaseDuration,
         CancellationToken cancellationToken)
     {
         var leaseUntil = DateTimeOffset.UtcNow.Add(leaseDuration);
-        return await _store.TryAcquireLeaseAsync(flowName, instanceId, runnerId, leaseUntil, cancellationToken)
+        return await _store.TryAcquireLeaseAsync(flowName, runId, runnerId, leaseUntil, cancellationToken)
             .ConfigureAwait(false);
     }
 

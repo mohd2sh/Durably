@@ -5,6 +5,7 @@ namespace Durably.Persistence.EntityFrameworkCore.UnitTests;
 public sealed class TraceMapperTests
 {
     private const string FlowName = "orders";
+    private const string RunId = "run-1";
     private const string InstanceId = "ord-1";
     private const string StepKey = "generate";
     private const int Attempt = 1;
@@ -21,6 +22,7 @@ public sealed class TraceMapperTests
         var record = new TraceRecord
         {
             FlowName = FlowName,
+            RunId = RunId,
             InstanceId = InstanceId,
             StepKey = StepKey,
             Attempt = Attempt,
@@ -38,6 +40,7 @@ public sealed class TraceMapperTests
 
         // Assert
         Assert.Equal(FlowName, restored.FlowName);
+        Assert.Equal(RunId, restored.RunId);
         Assert.Equal(InstanceId, restored.InstanceId);
         Assert.Equal(StepKey, restored.StepKey);
         Assert.Equal(Attempt, restored.Attempt);

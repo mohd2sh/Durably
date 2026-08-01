@@ -1,4 +1,5 @@
 namespace Durably.Engine;
+
 public sealed class FlowEngine : IFlowEngine
 {
     private readonly IExecutionStore _store;
@@ -65,33 +66,31 @@ public sealed class FlowEngine : IFlowEngine
         string instanceId,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(flowName))
+        ValidateFlowAndInstance(flowName, instanceId);
+        var record = await _store.LoadLatestAsync(flowName, instanceId, cancellationToken).ConfigureAwait(false);
+        return record is null ? null : ToStatus(record);
+    }
+
+    public async Task<ExecutionStatusInfo?> GetStatusAsync(
+        string flowName,
+        string instanceId,
+        string runId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateFlowAndInstance(flowName, instanceId);
+        if (string.IsNullOrWhiteSpace(runId))
         {
-            throw new ArgumentException("Flow name is required.", nameof(flowName));
+            throw new ArgumentException("Run id is required.", nameof(runId));
         }
 
-        if (string.IsNullOrWhiteSpace(instanceId))
-        {
-            throw new ArgumentException("Instance id is required.", nameof(instanceId));
-        }
-
-        var record = await _store.LoadAsync(flowName, instanceId, cancellationToken).ConfigureAwait(false);
-        if (record is null)
+        var record = await _store.LoadAsync(flowName, runId, cancellationToken).ConfigureAwait(false);
+        if (record is null
+            || !string.Equals(record.InstanceId, instanceId, StringComparison.Ordinal))
         {
             return null;
         }
 
-        return new ExecutionStatusInfo
-        {
-            FlowName = record.FlowName,
-            InstanceId = record.InstanceId,
-            Status = record.Status,
-            CurrentStep = record.CurrentStep,
-            FailedStep = record.FailedStep,
-            ErrorMessage = record.ErrorMessage,
-            CreatedAt = record.CreatedAt,
-            UpdatedAt = record.UpdatedAt
-        };
+        return ToStatus(record);
     }
 
     public Task<ExecutionStatusInfo?> GetStatusAsync<TFlow>(
@@ -112,18 +111,20 @@ public sealed class FlowEngine : IFlowEngine
             throw new ArgumentException("Instance id must be provided.", nameof(instanceId));
         }
 
-        var existing = await _store.LoadAsync(flowName, instanceId, cancellationToken).ConfigureAwait(false);
-        if (existing is not null)
+        var startOptions = options ?? new FlowStartOptions();
+
+        var open = await _store.FindOpenAsync(flowName, instanceId, cancellationToken).ConfigureAwait(false);
+        if (open is not null)
         {
-            _workSignal.Notify();
-            return FlowStartResult.AlreadyExists(flowName, instanceId, existing.Status);
+            return OpenConflictResult(flowName, instanceId, open, startOptions.OpenConflict);
         }
 
         var state = initialState ?? new TState();
-        var startOptions = options ?? new FlowStartOptions();
+        var runId = Guid.NewGuid().ToString("N");
         var record = new ExecutionRecord
         {
             FlowName = flowName,
+            RunId = runId,
             InstanceId = instanceId,
             Status = ExecutionStatus.Pending,
             CurrentStep = 0,
@@ -140,13 +141,55 @@ public sealed class FlowEngine : IFlowEngine
         }
         catch (ExecutionAlreadyExistsException)
         {
-            existing = await _store.LoadAsync(flowName, instanceId, cancellationToken).ConfigureAwait(false)
-                ?? throw new InvalidOperationException("Execution record disappeared after duplicate create.");
-            _workSignal.Notify();
-            return FlowStartResult.AlreadyExists(flowName, instanceId, existing.Status);
+            // Lost the open-run unique index to a concurrent start — map to policy, never create again.
+            var winner = await _store.LoadLatestAsync(flowName, instanceId, cancellationToken).ConfigureAwait(false);
+            if (winner is not null)
+            {
+                return OpenConflictResult(flowName, instanceId, winner, startOptions.OpenConflict);
+            }
+
+            throw;
         }
 
         _workSignal.Notify();
-        return FlowStartResult.Created(flowName, instanceId);
+        return FlowStartResult.Created(flowName, instanceId, runId);
+    }
+
+    private FlowStartResult OpenConflictResult(
+        string flowName,
+        string instanceId,
+        ExecutionRecord open,
+        OpenConflictPolicy policy)
+    {
+        _workSignal.Notify();
+        return policy == OpenConflictPolicy.Skip
+            ? FlowStartResult.Skipped(flowName, instanceId, open.RunId, open.Status)
+            : FlowStartResult.Conflict(flowName, instanceId, open.RunId, open.Status);
+    }
+
+    private static ExecutionStatusInfo ToStatus(ExecutionRecord record) => new()
+    {
+        FlowName = record.FlowName,
+        RunId = record.RunId,
+        InstanceId = record.InstanceId,
+        Status = record.Status,
+        CurrentStep = record.CurrentStep,
+        FailedStep = record.FailedStep,
+        ErrorMessage = record.ErrorMessage,
+        CreatedAt = record.CreatedAt,
+        UpdatedAt = record.UpdatedAt
+    };
+
+    private static void ValidateFlowAndInstance(string flowName, string instanceId)
+    {
+        if (string.IsNullOrWhiteSpace(flowName))
+        {
+            throw new ArgumentException("Flow name is required.", nameof(flowName));
+        }
+
+        if (string.IsNullOrWhiteSpace(instanceId))
+        {
+            throw new ArgumentException("Instance id is required.", nameof(instanceId));
+        }
     }
 }
