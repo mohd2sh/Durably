@@ -64,6 +64,11 @@
           <td mat-cell *matCellDef="let row" class="mono">{{ row.instanceId }}</td>
         </ng-container>
 
+        <ng-container matColumnDef="runId">
+          <th mat-header-cell *matHeaderCellDef>Run</th>
+          <td mat-cell *matCellDef="let row" class="mono">{{ row.runId }}</td>
+        </ng-container>
+
         <ng-container matColumnDef="flowName">
           <th mat-header-cell *matHeaderCellDef>Flow</th>
           <td mat-cell *matCellDef="let row">{{ row.flowName }}</td>
@@ -97,7 +102,7 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let row">
-            <a mat-button class="btn-with-icon open-link" [routerLink]="['/executions', row.flowName, row.instanceId]">
+            <a mat-button class="btn-with-icon open-link" [routerLink]="['/executions', row.flowName, row.instanceId, row.runId]">
               <span class="material-symbols-outlined">open_in_new</span>
               Open
             </a>

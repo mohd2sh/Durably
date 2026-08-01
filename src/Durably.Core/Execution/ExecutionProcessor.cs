@@ -151,7 +151,7 @@ internal sealed class ExecutionProcessor
         }
         finally
         {
-            await _store.ReleaseLeaseAsync(record.FlowName, record.InstanceId, runnerId, cancellationToken)
+            await _store.ReleaseLeaseAsync(record.FlowName, record.RunId, runnerId, cancellationToken)
                 .ConfigureAwait(false);
         }
     }
@@ -268,7 +268,7 @@ internal sealed class ExecutionProcessor
         }
         finally
         {
-            await _store.ReleaseLeaseAsync(record.FlowName, record.InstanceId, runnerId, cancellationToken)
+            await _store.ReleaseLeaseAsync(record.FlowName, record.RunId, runnerId, cancellationToken)
                 .ConfigureAwait(false);
         }
     }
@@ -292,7 +292,7 @@ internal sealed class ExecutionProcessor
 
             if (ShouldSkipStep(node, state))
             {
-                _traces.EmitSkipped(flowName, instanceId, node.Key);
+                _traces.EmitSkipped(flowName, instanceId, record.RunId, node.Key);
 
                 await AdvanceAsync(record, index + 1, node.Key, state, runnerId, leaseDuration, cancellationToken)
                     .ConfigureAwait(false);
@@ -303,6 +303,7 @@ internal sealed class ExecutionProcessor
             var failure = await _stepRunner.ExecuteWithRetryAsync(
                 flowName,
                 instanceId,
+                record.RunId,
                 node,
                 state,
                 record,

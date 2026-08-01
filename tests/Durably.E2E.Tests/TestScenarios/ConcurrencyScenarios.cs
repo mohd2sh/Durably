@@ -19,9 +19,11 @@ public abstract class ConcurrencyScenarios<TFixture> : ScenarioTestsBase<TFixtur
         var store = NewExecutionStore();
         var now = DateTimeOffset.UtcNow;
 
+        var runId = Guid.NewGuid().ToString("N");
         await store.CreateAsync(new ExecutionRecord
         {
             FlowName = "concurrency",
+            RunId = runId,
             InstanceId = "one",
             Status = ExecutionStatus.Running,
             CurrentStep = 0,
@@ -34,10 +36,10 @@ public abstract class ConcurrencyScenarios<TFixture> : ScenarioTestsBase<TFixtur
 
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration);
         const string runner = "e2e-runner";
-        Assert.True(await store.TryAcquireLeaseAsync("concurrency", "one", runner, leaseUntil, CancellationToken.None));
+        Assert.True(await store.TryAcquireLeaseAsync("concurrency", runId, runner, leaseUntil, CancellationToken.None));
 
-        var runnerA = await store.LoadAsync("concurrency", "one", default);
-        var runnerB = await store.LoadAsync("concurrency", "one", default);
+        var runnerA = await store.LoadAsync("concurrency", runId, default);
+        var runnerB = await store.LoadAsync("concurrency", runId, default);
 
         runnerA!.CurrentStep = 1;
         await store.SaveCheckpointAsync(runnerA, runner, leaseUntil, default);
@@ -48,12 +50,15 @@ public abstract class ConcurrencyScenarios<TFixture> : ScenarioTestsBase<TFixtur
     }
 
     [Fact]
-    public async Task Concurrent_StartAsync_same_instance_one_created_one_already_exists()
+    public async Task Concurrent_StartAsync_same_instance_one_created_rest_conflict()
     {
         await ResetAsync();
         var flow = ScenarioFlows.CreateHappyPath();
 
-        await using var host = await StartHostAsync(d => d.AddFlow(flow));
+        // Keep the open run Pending so losers resolve Conflict via FindOpen (not LoadLatest of a completed winner).
+        await using var host = await StartHostAsync(
+            d => d.AddFlow(flow),
+            o => o.WorkerEnabled = false);
 
         var tasks = Enumerable.Range(0, 8)
             .Select(_ => host.Engine.StartAsync(flow, "same", new OrderState()))
@@ -61,9 +66,11 @@ public abstract class ConcurrencyScenarios<TFixture> : ScenarioTestsBase<TFixtur
 
         var results = await Task.WhenAll(tasks);
         Assert.Equal(1, results.Count(r => r.Outcome == FlowStartOutcome.Created));
-        Assert.Equal(7, results.Count(r => r.Outcome == FlowStartOutcome.AlreadyExists));
+        Assert.Equal(7, results.Count(r => r.Outcome == FlowStartOutcome.Conflict));
 
-        await host.WaitForStatusAsync(flow.Name, "same", ExecutionStatus.Completed);
+        var open = await host.Store.FindOpenAsync(flow.Name, "same", CancellationToken.None);
+        Assert.NotNull(open);
+        Assert.Equal(ExecutionStatus.Pending, open!.Status);
     }
 
     [Fact]
@@ -87,16 +94,16 @@ public abstract class ConcurrencyScenarios<TFixture> : ScenarioTestsBase<TFixtur
                 o.RunnerId = "primary";
             });
 
-        await host.Engine.StartAsync(flow, "lease-1", new OrderState());
+        var start = await host.Engine.StartAsync(flow, "lease-1", new OrderState());
 
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration);
-        Assert.True(await host.Store.TryAcquireLeaseAsync(flow.Name, "lease-1", "primary", leaseUntil, CancellationToken.None));
-        var record = await host.Store.LoadAsync(flow.Name, "lease-1", CancellationToken.None);
+        Assert.True(await host.Store.TryAcquireLeaseAsync(flow.Name, start.RunId, "primary", leaseUntil, CancellationToken.None));
+        var record = await host.Store.LoadAsync(flow.Name, start.RunId, CancellationToken.None);
         var processing = host.Processor.ProcessAsync(record!, "primary", TestLimits.DefaultLeaseDuration);
 
         await Task.Delay(TestLimits.BriefDelay);
         Assert.False(await host.Store.TryAcquireLeaseAsync(
-            flow.Name, "lease-1", "contender", DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration), CancellationToken.None));
+            flow.Name, start.RunId, "contender", DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration), CancellationToken.None));
 
         gate.TrySetResult();
         var result = await processing;

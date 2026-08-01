@@ -8,7 +8,17 @@ public interface ISqlDialect
 {
     string EnsureSchemaSql { get; }
 
+    /// <summary>Load one run by FlowName + RunId.</summary>
     string LoadSql { get; }
+
+    /// <summary>Open (Pending/Running) run for FlowName + InstanceId, if any.</summary>
+    string FindOpenSql { get; }
+
+    /// <summary>Most recently updated run for FlowName + InstanceId.</summary>
+    string LoadLatestSql { get; }
+
+    /// <summary>All runs for FlowName + InstanceId, newest first.</summary>
+    string ListRunsSql { get; }
 
     string InsertSql { get; }
 

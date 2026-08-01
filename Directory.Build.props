@@ -21,7 +21,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/durably/durably</PackageProjectUrl>
     <RepositoryUrl>https://github.com/durably/durably</RepositoryUrl>
-    <PackageTags>durable-execution;workflow;resume;checkpoint;retry;saga;dotnet</PackageTags>
+    <PackageTags>durable-execution;workflow;resume;checkpoint;retry;dotnet</PackageTags>
     <Description>Durable execution for everyday .NET code. Checkpoint your steps; resume after any crash.</Description>
   </PropertyGroup>
 

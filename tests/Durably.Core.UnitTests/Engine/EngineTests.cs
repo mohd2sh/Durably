@@ -24,7 +24,9 @@ public class EngineTests
         Assert.Equal(1, counters.Email);
         Assert.Equal(0, counters.Finalize);
 
-        var second = await harness.StartAndProcessAsync(flow, "order-1", new OrderState());
+        // A Failed run is not "open", so resuming it happens by re-processing the same
+        // (RunId-scoped) execution, not by calling StartAsync again (which would create a new run).
+        var second = await harness.ProcessAsync(flow.Name, "order-1");
 
         Assert.Equal(FlowStatus.Completed, second.Status);
         Assert.Equal(1, counters.Generate);
@@ -182,7 +184,7 @@ public class EngineTests
     }
 
     [Fact]
-    public async Task Completed_flow_is_idempotent_and_does_not_rerun_steps()
+    public async Task Reprocessing_a_completed_run_is_idempotent_and_does_not_rerun_steps()
     {
         var harness = EngineTestHarness.Create();
         var runs = 0;
@@ -191,10 +193,35 @@ public class EngineTests
             .Step("only", (s, ct) => { runs++; return Task.CompletedTask; });
 
         var first = await harness.StartAndProcessAsync(flow, "id-1", new OrderState());
-        var second = await harness.StartAndProcessAsync(flow, "id-1", new OrderState());
+
+        // Re-processing the same completed run (e.g. a stray re-claim) must not rerun steps.
+        var second = await harness.ProcessAsync(flow.Name, "id-1");
 
         Assert.Equal(FlowStatus.Completed, first.Status);
-        Assert.Equal(FlowStatus.Completed, second.Status);
+        Assert.Equal(FlowRunOutcome.AlreadyCompleted, second.Outcome);
         Assert.Equal(1, runs);
+    }
+
+    [Fact]
+    public async Task Second_StartAsync_after_completion_creates_a_new_run_with_a_different_RunId()
+    {
+        var harness = EngineTestHarness.Create();
+        var runs = 0;
+
+        var flow = Flow.For<IdempotentFlow, OrderState>()
+            .Step("only", (s, ct) => { runs++; return Task.CompletedTask; });
+        harness.Register(flow);
+
+        var firstStart = await harness.Engine.StartAsync(flow, "id-2", new OrderState());
+        await harness.ProcessAsync(flow.Name, "id-2");
+
+        var secondStart = await harness.Engine.StartAsync(flow, "id-2", new OrderState());
+        var second = await harness.ProcessAsync(flow.Name, "id-2");
+
+        Assert.Equal(FlowStartOutcome.Created, firstStart.Outcome);
+        Assert.Equal(FlowStartOutcome.Created, secondStart.Outcome);
+        Assert.NotEqual(firstStart.RunId, secondStart.RunId);
+        Assert.Equal(FlowStatus.Completed, second.Status);
+        Assert.Equal(2, runs);
     }
 }

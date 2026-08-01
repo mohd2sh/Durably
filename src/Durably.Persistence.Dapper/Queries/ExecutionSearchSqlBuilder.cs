@@ -63,6 +63,13 @@ internal sealed class ExecutionSearchSqlBuilder
             parameters.Add("InstanceIdPattern", $"%{instanceId.Trim()}%");
         }
 
+        if (!string.IsNullOrWhiteSpace(criteria.RunId))
+        {
+            var runId = criteria.RunId!;
+            clauses.Add($"{_dialect.QuoteColumn("RunId")} LIKE @RunIdPattern");
+            parameters.Add("RunIdPattern", $"%{runId.Trim()}%");
+        }
+
         if (criteria.From is not null)
         {
             clauses.Add($"{_dialect.QuoteColumn("UpdatedAt")} >= @From");

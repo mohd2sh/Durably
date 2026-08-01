@@ -5,6 +5,7 @@ namespace Durably.Persistence.EntityFrameworkCore.UnitTests;
 public sealed class ExecutionMapperTests
 {
     private const string FlowName = "orders";
+    private const string RunId = "run-1";
     private const string InstanceId = "ord-1";
     private const string ContextJson = "{\"value\":1}";
     private const string FailedStep = "email";
@@ -25,6 +26,7 @@ public sealed class ExecutionMapperTests
         var record = new ExecutionRecord
         {
             FlowName = FlowName,
+            RunId = RunId,
             InstanceId = InstanceId,
             Status = ExecutionStatus.Failed,
             CurrentStep = CurrentStep,
@@ -46,6 +48,7 @@ public sealed class ExecutionMapperTests
 
         // Assert
         Assert.Equal(FlowName, restored.FlowName);
+        Assert.Equal(RunId, restored.RunId);
         Assert.Equal(InstanceId, restored.InstanceId);
         Assert.Equal(ExecutionStatus.Failed, restored.Status);
         Assert.Equal(CurrentStep, restored.CurrentStep);
@@ -69,6 +72,7 @@ public sealed class ExecutionMapperTests
         var record = new ExecutionRecord
         {
             FlowName = FlowName,
+            RunId = RunId,
             InstanceId = InstanceId,
             Status = ExecutionStatus.Pending,
             ContextJson = "{}",

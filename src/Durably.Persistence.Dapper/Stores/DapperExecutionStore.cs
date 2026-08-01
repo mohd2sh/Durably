@@ -47,12 +47,48 @@ internal sealed class DapperExecutionStore : IExecutionStore
     }
 #endif
 
-    public async Task<ExecutionRecord?> LoadAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    public async Task<ExecutionRecord?> LoadAsync(string flowName, string runId, CancellationToken cancellationToken)
     {
         using var connection = await _runner.OpenAsync(cancellationToken).ConfigureAwait(false);
         var row = await connection.QueryFirstOrDefaultAsync<ExecutionRow>(
-            new CommandDefinition(_runner.Dialect.LoadSql, new { FlowName = flowName, InstanceId = instanceId },
+            new CommandDefinition(_runner.Dialect.LoadSql, new { FlowName = flowName, RunId = runId },
                 cancellationToken: cancellationToken, commandTimeout: _runner.Options.CommandTimeoutSeconds)).ConfigureAwait(false);
+        return row?.ToRecord();
+    }
+
+    public async Task<ExecutionRecord?> FindOpenAsync(
+        string flowName,
+        string instanceId,
+        CancellationToken cancellationToken)
+    {
+        using var connection = await _runner.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var row = await connection.QueryFirstOrDefaultAsync<ExecutionRow>(
+            new CommandDefinition(
+                _runner.Dialect.FindOpenSql,
+                new
+                {
+                    FlowName = flowName,
+                    InstanceId = instanceId,
+                    Pending = (int)ExecutionStatus.Pending,
+                    Running = (int)ExecutionStatus.Running
+                },
+                cancellationToken: cancellationToken,
+                commandTimeout: _runner.Options.CommandTimeoutSeconds)).ConfigureAwait(false);
+        return row?.ToRecord();
+    }
+
+    public async Task<ExecutionRecord?> LoadLatestAsync(
+        string flowName,
+        string instanceId,
+        CancellationToken cancellationToken)
+    {
+        using var connection = await _runner.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var row = await connection.QueryFirstOrDefaultAsync<ExecutionRow>(
+            new CommandDefinition(
+                _runner.Dialect.LoadLatestSql,
+                new { FlowName = flowName, InstanceId = instanceId },
+                cancellationToken: cancellationToken,
+                commandTimeout: _runner.Options.CommandTimeoutSeconds)).ConfigureAwait(false);
         return row?.ToRecord();
     }
 
@@ -72,7 +108,7 @@ internal sealed class DapperExecutionStore : IExecutionStore
         }
         catch (Exception ex) when (IsDuplicateKey(ex))
         {
-            throw new ExecutionAlreadyExistsException(record.FlowName, record.InstanceId);
+            throw new ExecutionAlreadyExistsException(record.FlowName, record.InstanceId, record.RunId);
         }
     }
 
@@ -100,7 +136,7 @@ internal sealed class DapperExecutionStore : IExecutionStore
                 new
                 {
                     row.FlowName,
-                    row.InstanceId,
+                    row.RunId,
                     row.Status,
                     row.CurrentStep,
                     row.ContextJson,
@@ -118,13 +154,13 @@ internal sealed class DapperExecutionStore : IExecutionStore
 
         if (affected == 0)
         {
-            var current = await LoadAsync(record.FlowName, record.InstanceId, cancellationToken).ConfigureAwait(false);
+            var current = await LoadAsync(record.FlowName, record.RunId, cancellationToken).ConfigureAwait(false);
             if (current is null || string.Equals(current.LockedBy, runnerId, StringComparison.Ordinal))
             {
-                throw new ConcurrencyConflictException(record.FlowName, record.InstanceId);
+                throw new ConcurrencyConflictException(record.FlowName, record.RunId, record.InstanceId);
             }
 
-            throw new LeaseLostException(record.FlowName, record.InstanceId);
+            throw new LeaseLostException(record.FlowName, record.RunId, record.InstanceId);
         }
 
         record.Version += 1;
@@ -134,7 +170,7 @@ internal sealed class DapperExecutionStore : IExecutionStore
 
     public async Task<bool> TryAcquireLeaseAsync(
         string flowName,
-        string instanceId,
+        string runId,
         string runnerId,
         DateTimeOffset leaseUntil,
         CancellationToken cancellationToken)
@@ -152,7 +188,7 @@ internal sealed class DapperExecutionStore : IExecutionStore
                 new
                 {
                     FlowName = flowName,
-                    InstanceId = instanceId,
+                    RunId = runId,
                     RunnerId = runnerId,
                     LockedUntil = leaseUntil.UtcDateTime,
                     UpdatedAt = now.UtcDateTime,
@@ -164,7 +200,7 @@ internal sealed class DapperExecutionStore : IExecutionStore
         return affected > 0;
     }
 
-    public async Task ReleaseLeaseAsync(string flowName, string instanceId, string runnerId, CancellationToken cancellationToken)
+    public async Task ReleaseLeaseAsync(string flowName, string runId, string runnerId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(runnerId))
         {
@@ -178,7 +214,7 @@ internal sealed class DapperExecutionStore : IExecutionStore
                 new
                 {
                     FlowName = flowName,
-                    InstanceId = instanceId,
+                    RunId = runId,
                     RunnerId = runnerId,
                     UpdatedAt = DateTimeOffset.UtcNow.UtcDateTime
                 },

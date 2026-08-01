@@ -50,6 +50,7 @@ internal sealed class EfExecutionQuery : IExecutionQuery
     public async Task<ExecutionDetail?> GetAsync(
         string flowName,
         string instanceId,
+        string? runId,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(flowName))
@@ -64,14 +65,57 @@ internal sealed class EfExecutionQuery : IExecutionQuery
 
         await EfDatabaseInitializer.EnsureReadyAsync(_contextFactory, _options, cancellationToken).ConfigureAwait(false);
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
-        var entity = await context.Executions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                e => e.FlowName == flowName && e.InstanceId == instanceId,
-                cancellationToken)
-            .ConfigureAwait(false);
+
+        ExecutionEntity? entity;
+        if (!string.IsNullOrWhiteSpace(runId))
+        {
+            entity = await context.Executions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(
+                    e => e.FlowName == flowName && e.InstanceId == instanceId && e.RunId == runId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            entity = await context.Executions
+                .AsNoTracking()
+                .Where(e => e.FlowName == flowName && e.InstanceId == instanceId)
+                .OrderByDescending(e => e.UpdatedAt)
+                .ThenByDescending(e => e.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         return entity is null ? null : ExecutionProjectionMapper.ToDetail(ExecutionMapper.ToRecord(entity));
+    }
+
+    public async Task<IReadOnlyList<ExecutionSummary>> ListRunsAsync(
+        string flowName,
+        string instanceId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(flowName))
+        {
+            throw new ArgumentException("Flow name is required.", nameof(flowName));
+        }
+
+        if (string.IsNullOrWhiteSpace(instanceId))
+        {
+            throw new ArgumentException("Instance id is required.", nameof(instanceId));
+        }
+
+        await EfDatabaseInitializer.EnsureReadyAsync(_contextFactory, _options, cancellationToken).ConfigureAwait(false);
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var items = await context.Executions
+            .AsNoTracking()
+            .Where(e => e.FlowName == flowName && e.InstanceId == instanceId)
+            .OrderByDescending(e => e.UpdatedAt)
+            .ThenByDescending(e => e.CreatedAt)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return items.Select(e => ExecutionProjectionMapper.ToSummary(ExecutionMapper.ToRecord(e))).ToList();
     }
 
     private static IQueryable<ExecutionEntity> ApplyFilters(
@@ -94,6 +138,12 @@ internal sealed class EfExecutionQuery : IExecutionQuery
         {
             var pattern = criteria.InstanceId.Trim();
             query = query.Where(e => EF.Functions.Like(e.InstanceId, $"%{pattern}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(criteria.RunId))
+        {
+            var pattern = criteria.RunId.Trim();
+            query = query.Where(e => EF.Functions.Like(e.RunId, $"%{pattern}%"));
         }
 
         if (criteria.From is not null)

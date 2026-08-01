@@ -92,7 +92,7 @@ public sealed class AddDurablyTests
         // Assert
         Assert.Equal(FlowStatus.Failed, result.Status);
         Assert.Contains("not registered", result.Error!.Message, StringComparison.OrdinalIgnoreCase);
-        var record = await store.LoadAsync(flow.Name, InstanceId, CancellationToken.None);
+        var record = await store.LoadLatestAsync(flow.Name, InstanceId, CancellationToken.None);
         Assert.Equal(ExecutionStatus.Failed, record!.Status);
     }
 
@@ -186,8 +186,10 @@ public sealed class AddDurablyTests
             return await processor.ProcessAsync(match, runnerId, leaseDuration);
         }
 
-        Assert.True(await store.TryAcquireLeaseAsync(flowName, instanceId, runnerId, leaseUntil, CancellationToken.None));
-        var leased = await store.LoadAsync(flowName, instanceId, CancellationToken.None);
+        var current = await store.LoadLatestAsync(flowName, instanceId, CancellationToken.None);
+        Assert.NotNull(current);
+        Assert.True(await store.TryAcquireLeaseAsync(flowName, current!.RunId, runnerId, leaseUntil, CancellationToken.None));
+        var leased = await store.LoadAsync(flowName, current.RunId, CancellationToken.None);
         return await processor.ProcessAsync(leased!, runnerId, leaseDuration);
     }
 

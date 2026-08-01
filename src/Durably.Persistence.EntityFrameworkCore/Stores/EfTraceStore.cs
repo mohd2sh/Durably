@@ -29,14 +29,14 @@ internal sealed class EfTraceStore : ITraceStore
 
     public async Task<IReadOnlyList<TraceRecord>> LoadAsync(
         string flowName,
-        string instanceId,
+        string runId,
         CancellationToken cancellationToken)
     {
         await EfDatabaseInitializer.EnsureReadyAsync(_contextFactory, _options, cancellationToken).ConfigureAwait(false);
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         var rows = await context.Traces
             .AsNoTracking()
-            .Where(t => t.FlowName == flowName && t.InstanceId == instanceId)
+            .Where(t => t.FlowName == flowName && t.RunId == runId)
             .OrderBy(t => t.Timestamp)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

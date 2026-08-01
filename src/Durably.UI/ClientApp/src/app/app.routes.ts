@@ -5,5 +5,5 @@ import { ExecutionListComponent } from './features/executions/execution-list/exe
 
 export const routes: Routes = [
   { path: '', component: ExecutionListComponent },
-  { path: 'executions/:flowName/:instanceId', component: ExecutionDetailComponent }
+  { path: 'executions/:flowName/:instanceId/:runId', component: ExecutionDetailComponent }
 ];

@@ -27,9 +27,9 @@ public abstract class ExecutionStoreScenarios<TFixture> : ProviderTestsBase<TFix
         // Act
         await store.CreateAsync(record, CancellationToken.None);
         Assert.True(await store.TryAcquireLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.RunnerId, leaseUntil, CancellationToken.None));
+            TestConstants.FlowName, record.RunId, TestConstants.RunnerId, leaseUntil, CancellationToken.None));
 
-        var loaded = await store.LoadAsync(TestConstants.FlowName, TestConstants.InstanceId, CancellationToken.None);
+        var loaded = await store.LoadAsync(TestConstants.FlowName, record.RunId, CancellationToken.None);
         Assert.NotNull(loaded);
         Assert.Equal(0, loaded!.Version);
         Assert.Equal(TestConstants.ContextWithValue, loaded.ContextJson);
@@ -38,7 +38,7 @@ public abstract class ExecutionStoreScenarios<TFixture> : ProviderTestsBase<TFix
         loaded.Status = ExecutionStatus.Completed;
         await store.SaveCheckpointAsync(loaded, TestConstants.RunnerId, leaseUntil, CancellationToken.None);
 
-        var reloaded = await store.LoadAsync(TestConstants.FlowName, TestConstants.InstanceId, CancellationToken.None);
+        var reloaded = await store.LoadAsync(TestConstants.FlowName, record.RunId, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedStepAfterCheckpoint, reloaded!.CurrentStep);
@@ -69,14 +69,13 @@ public abstract class ExecutionStoreScenarios<TFixture> : ProviderTestsBase<TFix
         await ResetAsync();
         var store = NewStore();
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestConstants.LeaseDuration);
-        await store.CreateAsync(
-            ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId),
-            CancellationToken.None);
+        var record = ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId);
+        await store.CreateAsync(record, CancellationToken.None);
         Assert.True(await store.TryAcquireLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.RunnerId, leaseUntil, CancellationToken.None));
+            TestConstants.FlowName, record.RunId, TestConstants.RunnerId, leaseUntil, CancellationToken.None));
 
-        var first = await store.LoadAsync(TestConstants.FlowName, TestConstants.InstanceId, CancellationToken.None);
-        var second = await store.LoadAsync(TestConstants.FlowName, TestConstants.InstanceId, CancellationToken.None);
+        var first = await store.LoadAsync(TestConstants.FlowName, record.RunId, CancellationToken.None);
+        var second = await store.LoadAsync(TestConstants.FlowName, record.RunId, CancellationToken.None);
         first!.CurrentStep = 1;
         await store.SaveCheckpointAsync(first, TestConstants.RunnerId, leaseUntil, CancellationToken.None);
 
@@ -93,14 +92,13 @@ public abstract class ExecutionStoreScenarios<TFixture> : ProviderTestsBase<TFix
         await ResetAsync();
         var store = NewStore();
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestConstants.LeaseDuration);
-        await store.CreateAsync(
-            ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId),
-            CancellationToken.None);
+        var created = ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId);
+        await store.CreateAsync(created, CancellationToken.None);
         Assert.True(await store.TryAcquireLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.RunnerId, leaseUntil, CancellationToken.None));
-        var record = await store.LoadAsync(TestConstants.FlowName, TestConstants.InstanceId, CancellationToken.None);
+            TestConstants.FlowName, created.RunId, TestConstants.RunnerId, leaseUntil, CancellationToken.None));
+        var record = await store.LoadAsync(TestConstants.FlowName, created.RunId, CancellationToken.None);
         await store.ReleaseLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.RunnerId, CancellationToken.None);
+            TestConstants.FlowName, created.RunId, TestConstants.RunnerId, CancellationToken.None);
 
         // Act / Assert
         await Assert.ThrowsAsync<LeaseLostException>(() =>
@@ -114,20 +112,19 @@ public abstract class ExecutionStoreScenarios<TFixture> : ProviderTestsBase<TFix
         await ResetAsync();
         var store = NewStore();
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestConstants.LeaseDuration);
-        await store.CreateAsync(
-            ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId),
-            CancellationToken.None);
+        var record = ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId);
+        await store.CreateAsync(record, CancellationToken.None);
 
         // Act
         var firstAcquired = await store.TryAcquireLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.RunnerId, leaseUntil, CancellationToken.None);
+            TestConstants.FlowName, record.RunId, TestConstants.RunnerId, leaseUntil, CancellationToken.None);
         var secondBlocked = await store.TryAcquireLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.OtherRunnerId, leaseUntil, CancellationToken.None);
+            TestConstants.FlowName, record.RunId, TestConstants.OtherRunnerId, leaseUntil, CancellationToken.None);
 
         await store.ReleaseLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.RunnerId, CancellationToken.None);
+            TestConstants.FlowName, record.RunId, TestConstants.RunnerId, CancellationToken.None);
         var afterRelease = await store.TryAcquireLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.OtherRunnerId, leaseUntil, CancellationToken.None);
+            TestConstants.FlowName, record.RunId, TestConstants.OtherRunnerId, leaseUntil, CancellationToken.None);
 
         // Assert
         Assert.True(firstAcquired);
@@ -143,19 +140,18 @@ public abstract class ExecutionStoreScenarios<TFixture> : ProviderTestsBase<TFix
         var store = NewStore();
         var expiredLease = DateTimeOffset.UtcNow.AddMinutes(-5);
         var freshLease = DateTimeOffset.UtcNow.Add(TestConstants.LeaseDuration);
-        await store.CreateAsync(
-            ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId),
-            CancellationToken.None);
+        var record = ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId);
+        await store.CreateAsync(record, CancellationToken.None);
         Assert.True(await store.TryAcquireLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.RunnerId, expiredLease, CancellationToken.None));
+            TestConstants.FlowName, record.RunId, TestConstants.RunnerId, expiredLease, CancellationToken.None));
 
         // Act
         var reclaimed = await store.TryAcquireLeaseAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, TestConstants.OtherRunnerId, freshLease, CancellationToken.None);
+            TestConstants.FlowName, record.RunId, TestConstants.OtherRunnerId, freshLease, CancellationToken.None);
 
         // Assert
         Assert.True(reclaimed);
-        var loaded = await store.LoadAsync(TestConstants.FlowName, TestConstants.InstanceId, CancellationToken.None);
+        var loaded = await store.LoadAsync(TestConstants.FlowName, record.RunId, CancellationToken.None);
         Assert.Equal(TestConstants.OtherRunnerId, loaded!.LockedBy);
     }
 
@@ -172,13 +168,14 @@ public abstract class ExecutionStoreScenarios<TFixture> : ProviderTestsBase<TFix
         const string completedFlow = "completed-flow";
         const int batchSize = 10;
 
+        var runningRecord = ExecutionRecordFactory.Create(runningFlow, "r1", ExecutionStatus.Running, timestamp: now);
         await store.CreateAsync(ExecutionRecordFactory.Create(pendingFlow, "p1", ExecutionStatus.Pending, timestamp: now), CancellationToken.None);
-        await store.CreateAsync(ExecutionRecordFactory.Create(runningFlow, "r1", ExecutionStatus.Running, timestamp: now), CancellationToken.None);
+        await store.CreateAsync(runningRecord, CancellationToken.None);
         await store.CreateAsync(ExecutionRecordFactory.Create(failedFlow, "f1", ExecutionStatus.Failed, timestamp: now), CancellationToken.None);
         await store.CreateAsync(ExecutionRecordFactory.Create(completedFlow, "c1", ExecutionStatus.Completed, timestamp: now), CancellationToken.None);
 
         var expiredLease = now.AddMinutes(-2);
-        Assert.True(await store.TryAcquireLeaseAsync(runningFlow, "r1", TestConstants.RunnerId, expiredLease, CancellationToken.None));
+        Assert.True(await store.TryAcquireLeaseAsync(runningFlow, runningRecord.RunId, TestConstants.RunnerId, expiredLease, CancellationToken.None));
 
         var claimUntil = now.Add(TestConstants.LeaseDuration);
 
@@ -250,13 +247,12 @@ public abstract class ExecutionStoreScenarios<TFixture> : ProviderTestsBase<TFix
         // Arrange
         await ResetAsync();
         var store = NewStore();
-        await store.CreateAsync(
-            ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId),
-            CancellationToken.None);
+        var record = ExecutionRecordFactory.Running(TestConstants.FlowName, TestConstants.InstanceId);
+        await store.CreateAsync(record, CancellationToken.None);
 
         // Act
         await Database.ResetAsync();
-        var afterReset = await store.LoadAsync(TestConstants.FlowName, TestConstants.InstanceId, CancellationToken.None);
+        var afterReset = await store.LoadAsync(TestConstants.FlowName, record.RunId, CancellationToken.None);
 
         // Assert
         Assert.Null(afterReset);

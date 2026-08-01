@@ -29,6 +29,7 @@ public abstract class ExecutionQueryScenarios<TFixture> : ProviderTestsBase<TFix
         await store.CreateAsync(new ExecutionRecord
         {
             FlowName = OrdersFlow,
+            RunId = Guid.NewGuid().ToString("N"),
             InstanceId = InstanceA,
             Status = ExecutionStatus.Completed,
             CurrentStep = 3,
@@ -42,6 +43,7 @@ public abstract class ExecutionQueryScenarios<TFixture> : ProviderTestsBase<TFix
         await store.CreateAsync(new ExecutionRecord
         {
             FlowName = OrdersFlow,
+            RunId = Guid.NewGuid().ToString("N"),
             InstanceId = InstanceB,
             Status = ExecutionStatus.Pending,
             CurrentStep = 0,

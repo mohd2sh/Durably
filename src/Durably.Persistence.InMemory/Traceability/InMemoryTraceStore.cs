@@ -24,12 +24,12 @@ internal sealed class InMemoryTraceStore : ITraceStore
         return Task.CompletedTask;
     }
 
-    public Task<IReadOnlyList<TraceRecord>> LoadAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<TraceRecord>> LoadAsync(string flowName, string runId, CancellationToken cancellationToken)
     {
         lock (_gate)
         {
             var matches = _records
-                .Where(r => r.FlowName == flowName && r.InstanceId == instanceId)
+                .Where(r => r.FlowName == flowName && r.RunId == runId)
                 .OrderBy(r => r.Timestamp)
                 .Select(Clone)
                 .ToList();
@@ -40,6 +40,7 @@ internal sealed class InMemoryTraceStore : ITraceStore
     private static TraceRecord Clone(TraceRecord source) => new()
     {
         FlowName = source.FlowName,
+        RunId = source.RunId,
         InstanceId = source.InstanceId,
         StepKey = source.StepKey,
         Attempt = source.Attempt,

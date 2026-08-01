@@ -22,6 +22,7 @@ export class DurablyApiService {
 
     httpParams = this.appendOptional(httpParams, 'flowName', params.flowName);
     httpParams = this.appendOptional(httpParams, 'instanceId', params.instanceId);
+    httpParams = this.appendOptional(httpParams, 'runId', params.runId);
     httpParams = this.appendOptional(httpParams, 'from', params.from);
     httpParams = this.appendOptional(httpParams, 'to', params.to);
     httpParams = this.appendOptional(httpParams, 'metadataKey', params.metadataKey);
@@ -34,17 +35,21 @@ export class DurablyApiService {
     return this.http.get<PagedResult<ExecutionSummary>>(EXECUTIONS_API_PATH, { params: httpParams });
   }
 
-  getExecution(flowName: string, instanceId: string): Observable<ExecutionDetail> {
+  getExecution(flowName: string, instanceId: string, runId: string): Observable<ExecutionDetail> {
     const encodedFlow = encodeURIComponent(flowName);
     const encodedInstance = encodeURIComponent(instanceId);
-    return this.http.get<ExecutionDetail>(`${EXECUTIONS_API_PATH}/${encodedFlow}/${encodedInstance}`);
+    const encodedRun = encodeURIComponent(runId);
+    return this.http.get<ExecutionDetail>(
+      `${EXECUTIONS_API_PATH}/${encodedFlow}/${encodedInstance}/${encodedRun}`
+    );
   }
 
-  getTraces(flowName: string, instanceId: string): Observable<TraceRecord[]> {
+  getTraces(flowName: string, instanceId: string, runId: string): Observable<TraceRecord[]> {
     const encodedFlow = encodeURIComponent(flowName);
     const encodedInstance = encodeURIComponent(instanceId);
+    const encodedRun = encodeURIComponent(runId);
     return this.http.get<TraceRecord[]>(
-      `${EXECUTIONS_API_PATH}/${encodedFlow}/${encodedInstance}/traces`
+      `${EXECUTIONS_API_PATH}/${encodedFlow}/${encodedInstance}/${encodedRun}/traces`
     );
   }
 

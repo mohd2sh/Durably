@@ -28,7 +28,7 @@ public class LeaseConcurrencyTests
     }
 
     [Fact]
-    public async Task Resume_ignores_initial_state_on_second_run()
+    public async Task Resume_via_ProcessAsync_ignores_initial_state_since_no_new_start_occurs()
     {
         var harness = EngineTestHarness.Create();
         var failOnce = true;
@@ -47,13 +47,44 @@ public class LeaseConcurrencyTests
             });
 
         await harness.StartAndProcessAsync(flow, "s1", new OrderState { Report = "initial" });
-        var second = await harness.StartAndProcessAsync(flow, "s1", new OrderState { Report = "ignored" });
+        // Resuming the same (Failed) run happens via re-processing, not via StartAsync again:
+        // StartAsync on a non-open run always creates a brand new run with a new RunId.
+        var second = await harness.ProcessAsync(flow.Name, "s1");
 
         Assert.True(second.IsCompleted);
         Assert.Equal(FlowRunOutcome.Resumed, second.Outcome);
-        var record = await harness.Store.LoadAsync(flow.Name, "s1", default);
+        var record = await harness.Store.LoadLatestAsync(flow.Name, "s1", default);
         Assert.Contains("checkpoint", record!.ContextJson, StringComparison.Ordinal);
-        Assert.DoesNotContain("ignored", record.ContextJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Second_StartAsync_after_failure_creates_new_run_using_new_initial_state()
+    {
+        var harness = EngineTestHarness.Create();
+        var failOnce = true;
+
+        var flow = Flow.For<StateTestFlow, OrderState>()
+            .Step("seed", (s, _) => { s.Report ??= "checkpoint"; return Task.CompletedTask; })
+            .Step("fail", (s, _) =>
+            {
+                if (failOnce)
+                {
+                    failOnce = false;
+                    throw new InvalidOperationException("boom");
+                }
+
+                return Task.CompletedTask;
+            });
+
+        var first = await harness.StartAndProcessAsync(flow, "s1", new OrderState { Report = "initial" });
+        Assert.Equal(FlowStatus.Failed, first.Status);
+
+        var second = await harness.StartAndProcessAsync(flow, "s1", new OrderState { Report = "new-run-state" });
+
+        Assert.True(second.IsCompleted);
+        Assert.Equal(FlowRunOutcome.Started, second.Outcome);
+        var record = await harness.Store.LoadLatestAsync(flow.Name, "s1", default);
+        Assert.Contains("new-run-state", record!.ContextJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -67,7 +98,7 @@ public class LeaseConcurrencyTests
         var result = await harness.StartAndProcessAsync(flow, "d1", state: null);
 
         Assert.True(result.IsCompleted);
-        var record = await harness.Store.LoadAsync(flow.Name, "d1", default);
+        var record = await harness.Store.LoadLatestAsync(flow.Name, "d1", default);
         Assert.Contains("ok", record!.ContextJson, StringComparison.Ordinal);
     }
 }

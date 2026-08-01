@@ -1,18 +1,24 @@
 namespace Durably.Execution;
+
 /// <summary>
-/// The persisted state of one flow instance. This is the unit the engine checkpoints after every
+/// The persisted state of one flow <em>run</em>. This is the unit the engine checkpoints after every
 /// step and rehydrates on resume. Persistence providers map this to a row (or document).
 /// </summary>
 /// <remarks>
+/// Identity is <c>(FlowName, RunId)</c>. <see cref="InstanceId"/> is the business key and may have
+/// many runs over time; at most one run may be open (Pending/Running) per instance.
 /// Mutability is intentional: the engine and stores update this DTO in place during checkpoints.
 /// Application code should treat loaded records as read-only snapshots.
 /// </remarks>
 public sealed class ExecutionRecord
 {
-    /// <summary>Flow definition name. Part of the instance's composite key.</summary>
+    /// <summary>Flow definition name. Part of the run's primary key.</summary>
     public string FlowName { get; set; } = string.Empty;
 
-    /// <summary>Business/instance key. Part of the instance's composite key.</summary>
+    /// <summary>System-generated run identity. Part of the run's primary key.</summary>
+    public string RunId { get; set; } = string.Empty;
+
+    /// <summary>Business/instance key (e.g. product id). Correlation only — not unique across runs.</summary>
     public string InstanceId { get; set; } = string.Empty;
 
     public ExecutionStatus Status { get; set; }
@@ -45,12 +51,12 @@ public sealed class ExecutionRecord
 
     public DateTimeOffset UpdatedAt { get; set; }
 
-    /// <summary>Runner id that currently owns this instance, or <c>null</c> when unleased.</summary>
+    /// <summary>Runner id that currently owns this run, or <c>null</c> when unleased.</summary>
     public string? LockedBy { get; set; }
 
     /// <summary>When the current lease expires (UTC), or <c>null</c> when unleased.</summary>
     public DateTimeOffset? LockedUntil { get; set; }
 
-    /// <summary>Optional JSON metadata bag for search and UI display (set at instance creation).</summary>
+    /// <summary>Optional JSON metadata bag for search and UI display (set at run creation).</summary>
     public string? MetadataJson { get; set; }
 }

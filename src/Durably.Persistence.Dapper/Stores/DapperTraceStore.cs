@@ -31,11 +31,11 @@ internal sealed class DapperTraceStore : ITraceStore
         }
     }
 
-    public async Task<IReadOnlyList<TraceRecord>> LoadAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<TraceRecord>> LoadAsync(string flowName, string runId, CancellationToken cancellationToken)
     {
         using var connection = await _runner.OpenAsync(cancellationToken).ConfigureAwait(false);
         var rows = await connection.QueryAsync<TraceRow>(
-            new CommandDefinition(_runner.Dialect.LoadTracesSql, new { FlowName = flowName, InstanceId = instanceId },
+            new CommandDefinition(_runner.Dialect.LoadTracesSql, new { FlowName = flowName, RunId = runId },
                 cancellationToken: cancellationToken, commandTimeout: _runner.Options.CommandTimeoutSeconds)).ConfigureAwait(false);
         return rows.Select(r => r.ToRecord()).ToList();
     }

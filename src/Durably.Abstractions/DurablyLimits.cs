@@ -5,7 +5,7 @@ namespace Durably;
 /// </summary>
 public static class DurablyLimits
 {
-    /// <summary>Max length for FlowName, InstanceId, FailedStep, LockedBy, StepKey columns.</summary>
+    /// <summary>Max length for FlowName, InstanceId, RunId, FailedStep, LockedBy, StepKey columns.</summary>
     public const int IdentifierMaxLength = 200;
 
     /// <summary>Max length for worker runner identifiers persisted on leases.</summary>

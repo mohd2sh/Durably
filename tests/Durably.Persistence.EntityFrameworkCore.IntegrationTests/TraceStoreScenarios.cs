@@ -28,6 +28,7 @@ public abstract class TraceStoreScenarios<TFixture> : ProviderTestsBase<TFixture
             new TraceRecord
             {
                 FlowName = TestConstants.FlowName,
+                RunId = TestConstants.RunId,
                 InstanceId = TestConstants.InstanceId,
                 StepKey = StepKey,
                 Attempt = Attempt,
@@ -42,7 +43,7 @@ public abstract class TraceStoreScenarios<TFixture> : ProviderTestsBase<TFixture
         // Act
         await traceStore.AppendAsync(records, CancellationToken.None);
         var loaded = await traceStore.LoadAsync(
-            TestConstants.FlowName, TestConstants.InstanceId, CancellationToken.None);
+            TestConstants.FlowName, TestConstants.RunId, CancellationToken.None);
 
         // Assert
         Assert.Single(loaded);
@@ -57,11 +58,11 @@ public abstract class TraceStoreScenarios<TFixture> : ProviderTestsBase<TFixture
         // Arrange
         await ResetAsync();
         var traceStore = NewTraceStore();
-        const string missingInstance = "missing-instance";
+        const string missingRunId = "missing-run";
 
         // Act
         var loaded = await traceStore.LoadAsync(
-            TestConstants.FlowName, missingInstance, CancellationToken.None);
+            TestConstants.FlowName, missingRunId, CancellationToken.None);
 
         // Assert
         Assert.Empty(loaded);

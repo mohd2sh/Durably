@@ -5,6 +5,7 @@ internal static class ExecutionMapper
     public static ExecutionEntity ToEntity(ExecutionRecord record) => new()
     {
         FlowName = record.FlowName,
+        RunId = record.RunId,
         InstanceId = record.InstanceId,
         Status = (int)record.Status,
         CurrentStep = record.CurrentStep,
@@ -24,6 +25,7 @@ internal static class ExecutionMapper
     public static ExecutionRecord ToRecord(ExecutionEntity entity) => new()
     {
         FlowName = entity.FlowName,
+        RunId = entity.RunId,
         InstanceId = entity.InstanceId,
         Status = (ExecutionStatus)entity.Status,
         CurrentStep = entity.CurrentStep,

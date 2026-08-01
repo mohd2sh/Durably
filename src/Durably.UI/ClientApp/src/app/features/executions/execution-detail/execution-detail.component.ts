@@ -68,11 +68,12 @@ export class ExecutionDetailComponent implements OnInit, AfterViewChecked {
 
     const flowName = this.route.snapshot.paramMap.get('flowName') ?? '';
     const instanceId = this.route.snapshot.paramMap.get('instanceId') ?? '';
+    const runId = this.route.snapshot.paramMap.get('runId') ?? '';
 
-    this.api.getExecution(flowName, instanceId).subscribe({
+    this.api.getExecution(flowName, instanceId, runId).subscribe({
       next: execution => {
         this.execution = execution;
-        this.loadTraces(flowName, instanceId);
+        this.loadTraces(flowName, instanceId, runId);
       },
       error: () => {
         this.errorMessage = 'Execution not found or access denied.';
@@ -146,8 +147,8 @@ export class ExecutionDetailComponent implements OnInit, AfterViewChecked {
     return Boolean(trace.inputJson) && Boolean(trace.outputJson);
   }
 
-  private loadTraces(flowName: string, instanceId: string): void {
-    this.api.getTraces(flowName, instanceId).subscribe({
+  private loadTraces(flowName: string, instanceId: string, runId: string): void {
+    this.api.getTraces(flowName, instanceId, runId).subscribe({
       next: traces => {
         this.traces = traces;
         this.selectedTrace = traces[0];
