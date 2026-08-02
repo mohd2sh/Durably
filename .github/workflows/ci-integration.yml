@@ -1,0 +1,57 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Run integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            6.0.x
+            8.0.x
+            9.0.x
+            10.0.x
+          cache: true
+
+      - name: Restore
+        run: dotnet restore Durably.CI.slnf
+
+      - name: Build
+        run: dotnet build Durably.CI.slnf -c Release --no-restore -p:SkipAngularBuild=true
+
+      - name: Test
+        run: |
+          dotnet test tests/Durably.Persistence.EntityFrameworkCore.IntegrationTests/Durably.Persistence.EntityFrameworkCore.IntegrationTests.csproj \
+            -c Release --no-build --verbosity normal \
+            --logger "trx;LogFileName=ef-integration.trx" \
+            --results-directory TestResults
+          dotnet test tests/Durably.Traceability.IntegrationTests/Durably.Traceability.IntegrationTests.csproj \
+            -c Release --no-build --verbosity normal \
+            --logger "trx;LogFileName=traceability-integration.trx" \
+            --results-directory TestResults
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: TestResults
+          if-no-files-found: ignore
