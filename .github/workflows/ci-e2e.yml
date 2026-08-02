@@ -1,0 +1,53 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Run end-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            6.0.x
+            8.0.x
+            9.0.x
+            10.0.x
+          cache: true
+
+      - name: Restore
+        run: dotnet restore Durably.CI.slnf
+
+      - name: Build
+        run: dotnet build Durably.CI.slnf -c Release --no-restore -p:SkipAngularBuild=true
+
+      - name: Test
+        run: >
+          dotnet test tests/Durably.E2E.Tests/Durably.E2E.Tests.csproj
+          -c Release --no-build --verbosity normal
+          --logger "trx;LogFileName=e2e.trx"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: TestResults
+          if-no-files-found: ignore

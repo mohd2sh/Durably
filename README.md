@@ -10,11 +10,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/durably/durably/actions"><img src="https://img.shields.io/github/actions/workflow/status/durably/durably/build.yml?branch=main&label=build" alt="Build" /></a>
+  <a href="https://github.com/mohd2sh/Durably/actions/workflows/ci-unit.yml"><img src="https://img.shields.io/github/actions/workflow/status/mohd2sh/Durably/ci-unit.yml?branch=main&label=Unit%20Tests" alt="Unit Tests" /></a>
+  <a href="https://github.com/mohd2sh/Durably/actions/workflows/ci-integration.yml"><img src="https://img.shields.io/github/actions/workflow/status/mohd2sh/Durably/ci-integration.yml?branch=main&label=Integration%20Tests" alt="Integration Tests" /></a>
+  <a href="https://github.com/mohd2sh/Durably/actions/workflows/ci-e2e.yml"><img src="https://img.shields.io/github/actions/workflow/status/mohd2sh/Durably/ci-e2e.yml?branch=main&label=E2E%20Tests" alt="E2E Tests" /></a>
   <a href="https://www.nuget.org/packages/Durably.Core"><img src="https://img.shields.io/nuget/v/Durably.Core.svg?label=NuGet" alt="NuGet" /></a>
   <a href="https://www.nuget.org/packages/Durably.Core"><img src="https://img.shields.io/nuget/dt/Durably.Core.svg?label=downloads" alt="Downloads" /></a>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT" />
-  <img src="https://img.shields.io/badge/.NET-netstandard2.0%20%7C%20net8.0-512BD4" alt=".NET" />
+  <img src="https://img.shields.io/badge/.NET-netstandard2.0%20%7C%20net6%2B-512BD4" alt=".NET" />
 </p>
 
 ## Why Durably
