@@ -29,7 +29,6 @@ jobs:
             8.0.x
             9.0.x
             10.0.x
-          cache: true
 
       - name: Restore
         run: dotnet restore Durably.CI.slnf
