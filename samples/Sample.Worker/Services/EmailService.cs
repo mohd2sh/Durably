@@ -1,21 +1,33 @@
+using System.Collections.Concurrent;
+
 namespace Sample.Worker.Services;
 
 public sealed class EmailService : IEmailService
 {
-    private static readonly HashSet<string> SimulatedFailures = new(StringComparer.OrdinalIgnoreCase) { "order-2" };
-
-    public static void SimulateFailureFor(string orderId) => SimulatedFailures.Add(orderId);
-
-    public static void ClearSimulatedFailures() => SimulatedFailures.Clear();
-
-    public Task SendAsync(string orderId, CancellationToken cancellationToken)
+    private static readonly ConcurrentDictionary<string, byte> FailOnce = new(StringComparer.OrdinalIgnoreCase)
     {
-        if (!SimulatedFailures.Contains(orderId))
+        ["order-2"] = 0
+    };
+
+    private static readonly ConcurrentDictionary<string, byte> SentKeys = new(StringComparer.Ordinal);
+
+    public Task SendAsync(string orderId, string idempotencyKey, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrEmpty(idempotencyKey) && SentKeys.ContainsKey(idempotencyKey))
         {
             return Task.CompletedTask;
         }
 
-        SimulatedFailures.Remove(orderId);
-        throw new InvalidOperationException("SMTP server unavailable.");
+        if (FailOnce.TryRemove(orderId, out _))
+        {
+            throw new InvalidOperationException("SMTP server unavailable.");
+        }
+
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            SentKeys[idempotencyKey] = 0;
+        }
+
+        return Task.CompletedTask;
     }
 }

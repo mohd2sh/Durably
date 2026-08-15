@@ -1,9 +1,11 @@
-using Durably;
 using Sample.Worker.Models;
 
 namespace Sample.Worker.Workers;
 
-/// <summary>Periodically enqueues pending orders; <c>DurablyWorkerService</c> processes them in the background.</summary>
+/// <summary>
+/// Periodically enqueues sample orders via <see cref="IFlowEngine.StartAsync"/>.
+/// The library-hosted <c>DurablyWorkerService</c> claims and processes Pending work.
+/// </summary>
 public sealed class OrderFinalizeWorker : BackgroundService
 {
     private readonly IFlowEngine _engine;
@@ -51,7 +53,15 @@ public sealed class OrderFinalizeWorker : BackgroundService
 
         if (result.WasCreated)
         {
-            _logger.LogInformation("Order {OrderId} enqueued for finalize.", orderId);
+            _logger.LogInformation("Order {OrderId} enqueued (run {RunId}).", orderId, result.RunId);
+        }
+        else
+        {
+            _logger.LogDebug(
+                "Order {OrderId} start outcome {Outcome} (run {RunId}).",
+                orderId,
+                result.Outcome,
+                result.RunId);
         }
     }
 }
