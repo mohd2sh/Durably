@@ -17,7 +17,7 @@ var app = builder.Build();
 app.MapDurablyUI("/durable");
 ```
 
-Default route prefix is /durable. Persistence must expose IExecutionQuery and ITraceQuery (EF Core, Dapper, or in memory). Targets .NET 6 through .NET 10.
+Default route prefix is /durable. Persistence must expose IExecutionQuery and ITraceQuery (EF Core or in memory). Targets .NET 6 through .NET 10.
 
 The package ships the prebuilt dashboard inside the assembly. Your build needs no Node.js and no Angular CLI.
 

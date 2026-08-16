@@ -22,7 +22,7 @@ UseInMemoryStore registers IExecutionStore, IExecutionQuery, and ITraceStore in 
 ## Companion packages
 
 * Durably.Extensions.DependencyInjection for AddDurably
-* Durably.Persistence.EntityFrameworkCore or Durably.Persistence.Dapper for production storage
+* Durably.Persistence.EntityFrameworkCore for production storage
 
 ## Documentation
 

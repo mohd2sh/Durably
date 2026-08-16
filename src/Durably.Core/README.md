@@ -22,7 +22,7 @@ Pair Core with Durably.Extensions.DependencyInjection and a store. Start instanc
 ## Companion packages
 
 * Durably.Extensions.DependencyInjection for AddDurably, AddFlow, and the worker
-* Durably.Persistence.InMemory, Durably.Persistence.EntityFrameworkCore, or Durably.Persistence.Dapper for storage
+* Durably.Persistence.InMemory or Durably.Persistence.EntityFrameworkCore for storage
 * Durably.Traceability and Durably.UI when you want step traces and a dashboard
 
 ## Documentation

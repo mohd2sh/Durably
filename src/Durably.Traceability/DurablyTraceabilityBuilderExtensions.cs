@@ -10,7 +10,7 @@ public static class DurablyTraceabilityBuilderExtensions
 {
     /// <summary>
     /// Enable async per-step traceability: a bounded channel sink plus a hosted background writer.
-    /// Requires an <see cref="ITraceStore"/> from a persistence provider (<c>UseInMemoryStore</c>, EF, or Dapper).
+    /// Requires an <see cref="ITraceStore"/> from a persistence provider (<c>UseInMemoryStore</c> or EF Core).
     /// </summary>
     public static IDurablyBuilder AddTraceability(this IDurablyBuilder builder, Action<TraceabilityOptions>? configure = null)
     {

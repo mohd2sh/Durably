@@ -13,8 +13,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E9A3DC37
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Durably.Extensions.DependencyInjection", "src\Durably.Extensions.DependencyInjection\Durably.Extensions.DependencyInjection.csproj", "{23148873-09EC-4E56-8C47-ED9858C19339}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Durably.Persistence.Dapper", "src\Durably.Persistence.Dapper\Durably.Persistence.Dapper.csproj", "{813E2D82-BB35-451C-AB7E-958B8F99CA05}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Durably.Traceability", "src\Durably.Traceability\Durably.Traceability.csproj", "{44D0B6E7-AB71-4FC4-8647-8F13966EAA50}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Durably.E2E.Tests", "tests\Durably.E2E.Tests\Durably.E2E.Tests.csproj", "{AA2F3305-0707-43D0-B06D-F4F0ABE9FDDE}"
@@ -59,6 +57,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\ci-integration.yml = .github\workflows\ci-integration.yml
 		.github\workflows\ci-unit.yml = .github\workflows\ci-unit.yml
 		.github\workflows\nuget-publish.yml = .github\workflows\nuget-publish.yml
+		.github\workflows\pages.yml = .github\workflows\pages.yml
 	EndProjectSection
 EndProject
 Global
@@ -79,10 +78,6 @@ Global
 		{23148873-09EC-4E56-8C47-ED9858C19339}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{23148873-09EC-4E56-8C47-ED9858C19339}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{23148873-09EC-4E56-8C47-ED9858C19339}.Release|Any CPU.Build.0 = Release|Any CPU
-		{813E2D82-BB35-451C-AB7E-958B8F99CA05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{813E2D82-BB35-451C-AB7E-958B8F99CA05}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{813E2D82-BB35-451C-AB7E-958B8F99CA05}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{813E2D82-BB35-451C-AB7E-958B8F99CA05}.Release|Any CPU.Build.0 = Release|Any CPU
 		{44D0B6E7-AB71-4FC4-8647-8F13966EAA50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{44D0B6E7-AB71-4FC4-8647-8F13966EAA50}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44D0B6E7-AB71-4FC4-8647-8F13966EAA50}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -159,7 +154,6 @@ Global
 		{AC1E2EC3-C059-4940-9033-1D8BA1BCF714} = {5489E89F-64D4-49BF-A418-9BF259843893}
 		{3D57A390-9AC6-4A28-8E42-9EF3B74472A7} = {5489E89F-64D4-49BF-A418-9BF259843893}
 		{23148873-09EC-4E56-8C47-ED9858C19339} = {5489E89F-64D4-49BF-A418-9BF259843893}
-		{813E2D82-BB35-451C-AB7E-958B8F99CA05} = {5489E89F-64D4-49BF-A418-9BF259843893}
 		{44D0B6E7-AB71-4FC4-8647-8F13966EAA50} = {5489E89F-64D4-49BF-A418-9BF259843893}
 		{AA2F3305-0707-43D0-B06D-F4F0ABE9FDDE} = {E9A3DC37-2065-4A8F-A060-639BF42D3CE8}
 		{2C26A2B5-7F98-46A3-A5D9-407ECAF54312} = {B2F7AB88-CCB6-4939-8D8F-3FDB858BBD74}

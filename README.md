@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
+  <a href="https://mohd2sh.github.io/Durably/"><img src="https://img.shields.io/badge/website-GitHub%20Pages-0f172a" alt="Website" /></a>
   <a href="https://github.com/mohd2sh/Durably/actions/workflows/ci-unit.yml"><img src="https://img.shields.io/github/actions/workflow/status/mohd2sh/Durably/ci-unit.yml?branch=main&label=Unit%20Tests" alt="Unit Tests" /></a>
   <a href="https://github.com/mohd2sh/Durably/actions/workflows/ci-integration.yml"><img src="https://img.shields.io/github/actions/workflow/status/mohd2sh/Durably/ci-integration.yml?branch=main&label=Integration%20Tests" alt="Integration Tests" /></a>
   <a href="https://github.com/mohd2sh/Durably/actions/workflows/ci-e2e.yml"><img src="https://img.shields.io/github/actions/workflow/status/mohd2sh/Durably/ci-e2e.yml?branch=main&label=E2E%20Tests" alt="E2E Tests" /></a>
   <a href="https://www.nuget.org/packages/Durably.Core"><img src="https://img.shields.io/nuget/v/Durably.Core.svg?label=NuGet" alt="NuGet" /></a>
-  <a href="https://www.nuget.org/packages/Durably.Core"><img src="https://img.shields.io/nuget/dt/Durably.Core.svg?label=downloads" alt="Downloads" /></a>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT" />
   <img src="https://img.shields.io/badge/.NET-6%20through%2010-512BD4" alt=".NET 6 through 10" />
 </p>
@@ -23,9 +23,9 @@
 
 Durably is a simple .NET library for durable workflow execution inside your app.
 
-You define workflows as ordinary C# steps (`Flow.For` or `IFlow` / `IStep`). Branch like a state machine with `StepIf` and `Choose`. Durably gives you robust, durable execution out of the box. Progress is checkpointed in your store. A hosted worker claims work with leases and resumes from the last completed step after a crash.
+You define workflows as ordinary C# steps (`Flow.For` or `IFlow` / `IStep`). Branch like a state machine with `StepIf` and `Choose`. Progress is checkpointed in your store. A hosted worker claims work with leases and resumes from the last completed step after a crash.
 
-Not every workflow is a chain of events across services. Often a single service owns the whole flow and must run those steps as one durable unit: atomic in intent, robust under failure, and safe to continue without repeating finished work.
+Not every workflow is a chain of events across services. Often a single service owns the whole flow and must run those steps as one durable unit: checkpointed after each success, reclaimable after failure, and safe to continue without repeating finished work.
 
 Add Traceability when you want step-level monitoring. Add the UI when you want a dashboard to search executions and inspect runs. Keep the core when you only need the engine.
 
@@ -43,7 +43,7 @@ Durable workflows in your service. Your store. Your process.
 | Terminal hooks | `OnSuccess` / `OnFailure` plus DI success and failure handlers |
 | Hosted worker | `AddDurably` registers a background worker. Tune with `ConfigureWorker` |
 | Instance and run ids | Business `InstanceId` plus system `RunId`. Open-run policy via `OpenConflictPolicy` |
-| Persistence | InMemory (`UseInMemoryStore`). SQL Server, PostgreSQL, SQLite via EF Core or Dapper |
+| Persistence | InMemory (`UseInMemoryStore`). SQL Server, PostgreSQL, SQLite via EF Core |
 | DI | Fluent registration and `AddFlowsFromAssembly` |
 
 ## Extra features
@@ -113,7 +113,7 @@ var latest = await engine.GetStatusAsync(flow.Name, "order-100");
 var specific = await engine.GetStatusAsync(flow.Name, "order-100", result.RunId);
 ```
 
-### Why it is robust
+### How resume works
 
 1. `StartAsync` inserts a `Pending` run with a new `RunId` and signals the worker.
 2. The worker claims due rows with `ClaimDue`. Ownership is stamped as `LockedBy` and `LockedUntil` using skip-locked style claiming so runners do not race the same row.
@@ -166,7 +166,6 @@ Each library publishes as its own NuGet package. Host apps with EF Core or the U
 | `Durably.Extensions.DependencyInjection` | `AddDurably`, flow registration, hosted worker |
 | `Durably.Persistence.InMemory` | In-process store (`UseInMemoryStore`) for tests and demos |
 | `Durably.Persistence.EntityFrameworkCore` | EF Core store (`UseSqlServer` / `UsePostgres` / `UseSqlite`), net6 through net10 |
-| `Durably.Persistence.Dapper` | Dapper store (`UseSqlServer` / `UsePostgreSql` / `UseSqlite`) |
 
 ### Extra packages
 
@@ -203,16 +202,7 @@ dotnet add package Durably.Extensions.DependencyInjection
 dotnet add package Durably.Persistence.InMemory
 ```
 
-`AddDurably()` does not register a store. Call `UseInMemoryStore()` (or an EF/Dapper provider) explicitly.
-
-**Dapper (no EF)**
-
-```bash
-dotnet add package Durably.Extensions.DependencyInjection
-dotnet add package Durably.Persistence.Dapper
-```
-
-Then use `UseSqlServer`, `UsePostgreSql` (alias `UsePostgres`), or `UseSqlite` on the Durably builder.
+`AddDurably()` does not register a store. Call `UseInMemoryStore()` (or an EF Core provider) explicitly.
 
 ## Quick start
 
@@ -358,7 +348,7 @@ builder.Services
     });
 ```
 
-EF Core, Dapper, and `UseInMemoryStore` register `ITraceStore`. Call a persistence provider before `AddTraceability()`.
+EF Core and `UseInMemoryStore` register `ITraceStore`. Call a persistence provider before `AddTraceability()`.
 
 ## Durably.UI
 
@@ -371,7 +361,7 @@ var app = builder.Build();
 app.MapDurablyUI("/durable");
 ```
 
-Default route prefix is `/durable`. The map is anonymous by default. Chain `RequireAuthorization()` when the host already wires ASP.NET Core auth. `DurablyUIOptions.AllowActions` is reserved for future UI actions such as manual resume. Persistence must expose `IExecutionQuery` and `ITraceQuery` (EF Core, Dapper, or in-memory adapters).
+Default route prefix is `/durable`. The map is anonymous by default. Chain `RequireAuthorization()` when the host already wires ASP.NET Core auth. `DurablyUIOptions.AllowActions` is reserved for future UI actions such as manual resume. Persistence must expose `IExecutionQuery` and `ITraceQuery` (EF Core or in-memory adapters).
 
 <p align="center">
   <img src="docs/images/Dashboard%20List%20Light%20theme.png" alt="Durably dashboard executions list" width="900" />
@@ -387,12 +377,12 @@ Full sample: [`samples/Sample.AspNetCore.Api`](samples/Sample.AspNetCore.Api) (A
 
 Supported today:
 
-| Store | EF Core | Dapper | Notes |
-| --- | --- | --- | --- |
-| InMemory | n/a | n/a | `UseInMemoryStore` (`Durably.Persistence.InMemory`) |
-| SQL Server | `UseSqlServer` | `UseSqlServer` | Aspire sample API uses EF + `AutoMigrate` |
-| PostgreSQL | `UsePostgres` | `UsePostgreSql` (`UsePostgres` alias) | Aspire sample Worker uses EF + `AutoMigrate` |
-| SQLite | `UseSqlite` | `UseSqlite` | Useful for local and tests |
+| Store | Provider | Notes |
+| --- | --- | --- |
+| InMemory | `UseInMemoryStore` | `Durably.Persistence.InMemory` |
+| SQL Server | `UseSqlServer` | EF Core |
+| PostgreSQL | `UsePostgres` | Aspire sample API + Worker use EF + `AutoMigrate` |
+| SQLite | `UseSqlite` | Useful for local and tests |
 
 ## Advanced
 
@@ -417,8 +407,6 @@ Supported today:
 
 **Multiple runners.** Several hosts can share one store. Leases prevent two runners from owning the same instance at once. Claiming uses skip-locked style semantics so workers pull distinct due rows.
 
-**Dapper without EF.** Use `Durably.Persistence.Dapper` when you do not want an EF dependency.
-
 ## Best practices
 
 1. Keep steps small and focused on one side effect.
@@ -437,9 +425,8 @@ Supported today:
 * [ ] Retention and data cleanup (configurable retention period for completed and failed executions, automated cleanup)
 * [ ] Wait / continue APIs such as builder `WaitFor`, and engine helpers like `ContinueOrCreate` / `ResumeOrStart`, for flows that need another call to continue or that merge parallel mid-flow work (saga-style waits on more than one event)
 * [ ] More builder features for richer control flow beyond `Step` / `StepIf` / `Choose`
-* [ ] UI auth support in the Banana Cake Pop / Hot Chocolate spirit: the dashboard lets the operator pick an auth method (Bearer, Basic, OAuth-style fields) and supply client credentials or token settings, while the host configures ASP.NET Core authentication and authorization on the backend
+* [ ] UI auth: dashboard fields for Bearer, Basic, or OAuth-style client credentials while the host configures ASP.NET Core authentication and authorization
 * [ ] UI actions (manual resume) behind `DurablyUIOptions.AllowActions`
-* [ ] Publish CI that builds the Angular ClientApp before packing `Durably.UI`
 * [ ] Broader docs site (tutorials, API reference)
 
 ## Samples
@@ -448,8 +435,8 @@ API workflows are split by authoring style under [`Workflows/Oop`](samples/Sampl
 
 | Sample | What it shows |
 | --- | --- |
-| [`samples/Sample.AspNetCore.Api`](samples/Sample.AspNetCore.Api) | .NET 10. Oop + Fluent workflow folders. Traceability + UI. InMemory or Aspire SQL Server |
-| [`samples/Sample.AspNetCore.AppHost`](samples/Sample.AspNetCore.AppHost) | .NET 10 Aspire 13 host: SQL Server (API) + PostgreSQL (Worker) |
+| [`samples/Sample.AspNetCore.Api`](samples/Sample.AspNetCore.Api) | .NET 10. Oop + Fluent workflow folders. Traceability + UI. InMemory or Aspire PostgreSQL |
+| [`samples/Sample.AspNetCore.AppHost`](samples/Sample.AspNetCore.AppHost) | .NET 10 Aspire 13 host: PostgreSQL for API + Worker |
 | [`samples/Sample.Worker`](samples/Sample.Worker) | .NET 10. Fluent `Flow.For` + `IStep`. InMemory or Aspire PostgreSQL |
 
 Catalog and curls: [`samples/README.md`](samples/README.md).
@@ -485,7 +472,6 @@ Catalog and curls: [`samples/README.md`](samples/README.md).
 ## Community
 
 * [Issues](https://github.com/mohd2sh/Durably/issues) for bugs and feature requests
-* [Discussions](https://github.com/mohd2sh/Durably/discussions) for questions
 
 ## License
 

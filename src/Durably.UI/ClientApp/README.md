@@ -1,59 +1,38 @@
-# ClientApp
+# Durably.UI ClientApp
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.27.
+Angular source for the Durably dashboard. The MSBuild targets under `src/Durably.UI` build this app into `wwwroot` and embed those assets in the NuGet package. Consumers do not need Node.js.
 
-## Development server
+For package usage (`AddDurablyUI` / `MapDurablyUI`), see [../README.md](../README.md).
 
-To start a local development server, run:
+## Prerequisites
 
-```bash
-ng serve
-```
+* Node.js 20+
+* npm
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Local development
 
 ```bash
-ng generate component component-name
+npm ci
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+`ng serve` defaults to `http://localhost:4200/`. The ASP.NET host still serves the packaged SPA at the configured `MapDurablyUI` prefix unless you wire a separate proxy for ClientApp work.
+
+## Production build
 
 ```bash
-ng generate --help
+npm ci
+npm run build
 ```
 
-## Building
-
-To build the project run:
+Output lands in `../wwwroot`. Prefer building via the parent project so package embed and CI stay aligned:
 
 ```bash
-ng build
+dotnet build ../Durably.UI.csproj -c Release
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+To skip the Angular build when iterating on the C# host only:
 
 ```bash
-ng test
+dotnet build ../Durably.UI.csproj -c Release -p:SkipAngularBuild=true
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
