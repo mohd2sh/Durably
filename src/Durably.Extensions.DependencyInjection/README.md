@@ -22,7 +22,7 @@ AddDurably registers the engine and a background worker. Call a persistence exte
 ## Companion packages
 
 * Durably.Core for Flow.For and the engine types
-* Durably.Persistence.InMemory, Durably.Persistence.EntityFrameworkCore, or Durably.Persistence.Dapper for storage
+* Durably.Persistence.InMemory or Durably.Persistence.EntityFrameworkCore for storage
 * Durably.Traceability for AddTraceability
 
 ## Documentation

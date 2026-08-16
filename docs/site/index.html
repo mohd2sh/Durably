@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Durably | Durable workflows for .NET</title>
+  <meta name="description" content="Durably is a simple .NET library for durable workflow execution inside your app. Checkpointed steps, crash-safe resume, and optional monitoring." />
+  <link rel="canonical" href="https://mohd2sh.github.io/Durably/" />
+  <meta name="theme-color" content="#0f172a" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Durably" />
+  <meta property="og:title" content="Durably | Durable workflows for .NET" />
+  <meta property="og:description" content="Checkpointed steps, crash-safe resume, and optional monitoring in your .NET app." />
+  <meta property="og:url" content="https://mohd2sh.github.io/Durably/" />
+  <meta property="og:image" content="https://mohd2sh.github.io/Durably/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Durably | Durable workflows for .NET" />
+  <meta name="twitter:description" content="Checkpointed steps, crash-safe resume, and optional monitoring in your .NET app." />
+  <meta name="twitter:image" content="https://mohd2sh.github.io/Durably/og.png" />
+
+  <link rel="icon" type="image/png" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "name": "Durably",
+        "url": "https://mohd2sh.github.io/Durably/",
+        "description": "Durable workflows for .NET."
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Durably",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": ".NET 6 through .NET 10",
+        "programmingLanguage": "C#",
+        "url": "https://mohd2sh.github.io/Durably/",
+        "downloadUrl": "https://www.nuget.org/packages/Durably.Core",
+        "license": "https://github.com/mohd2sh/Durably/blob/main/LICENSE",
+        "codeRepository": "https://github.com/mohd2sh/Durably",
+        "description": "A simple .NET library for durable workflow execution inside your app with checkpointed steps, crash-safe resume, and optional monitoring.",
+        "author": {
+          "@type": "Person",
+          "name": "Mohammad Shakhtour"
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand-mark" href="#top" aria-label="Durably home">
+        <img src="assets/logo-web.png" alt="" width="36" height="36" />
+        <span>Durably</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="#why">Why</a>
+        <a href="#how">How it works</a>
+        <a href="#packages">Packages</a>
+        <a href="#start">Get started</a>
+        <a class="nav-github" href="https://github.com/mohd2sh/Durably">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-brand">
+      <div class="hero-atmosphere" aria-hidden="true"></div>
+      <div class="shell hero-inner">
+        <img class="hero-logo motion-rise" src="assets/logo-web.png" alt="Durably" width="280" height="280" />
+        <p class="hero-brand motion-rise delay-1" id="hero-brand">Durably</p>
+        <h1 class="hero-headline motion-rise delay-2">Durable workflows for .NET</h1>
+        <p class="hero-support motion-rise delay-3">
+          Checkpointed steps, crash-safe resume, and optional monitoring in your app.
+        </p>
+        <div class="cta-row motion-rise delay-4">
+          <a class="btn btn-primary" href="#start">Get started</a>
+          <a class="btn btn-ghost" href="https://github.com/mohd2sh/Durably">View on GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="why" aria-labelledby="why-title">
+      <div class="shell narrow reveal">
+        <h2 id="why-title">Why Durably</h2>
+        <p>
+          Durably is a simple .NET library for durable workflow execution inside your app.
+          You define workflows as ordinary C# steps with <code>Flow.For</code> or <code>IFlow</code> / <code>IStep</code>.
+          Branch like a state machine with <code>StepIf</code> and <code>Choose</code>.
+        </p>
+        <p>
+          Progress is checkpointed in your store. A hosted worker claims work with leases and
+          resumes from the last completed step after a crash.
+        </p>
+        <p>
+          Not every workflow is a chain of events across services. Often a single service owns the
+          whole flow and must run those steps as one durable unit.
+        </p>
+        <p class="pull">Durable workflows in your service. Your store. Your process.</p>
+      </div>
+    </section>
+
+    <section class="section section-muted" id="fit" aria-labelledby="fit-title">
+      <div class="shell reveal">
+        <h2 id="fit-title">Where it fits</h2>
+        <p class="section-lead">
+          Use Durably when one service owns a multi-step workflow and needs durable, resumable execution.
+        </p>
+        <ul class="fit-list">
+          <li>
+            <strong>Strong fit</strong>
+            Durable multi-step workflows and state-machine style branching inside a .NET service,
+            with optional monitoring and UI.
+          </li>
+          <li>
+            <strong>Microservices</strong>
+            Each service can run its own flows, worker, and store.
+          </li>
+          <li>
+            <strong>Use a message bus when</strong>
+            coordination itself must cross service boundaries with events.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="shell reveal">
+        <h2 id="how-title">How it works</h2>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <div>
+              <h3>Start</h3>
+              <p><code>StartAsync</code> inserts a Pending run with a business <code>InstanceId</code> and a system <code>RunId</code>.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <div>
+              <h3>Claim</h3>
+              <p>The hosted worker claims due work under a lease so one runner owns the instance.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <div>
+              <h3>Checkpoint and resume</h3>
+              <p>Each successful step saves state. After a crash, completed steps are skipped.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section section-muted" id="packages" aria-labelledby="packages-title">
+      <div class="shell reveal">
+        <h2 id="packages-title">Packages</h2>
+        <p class="section-lead">Host apps target .NET 6 through .NET 10. Core libraries also ship netstandard2.0.</p>
+        <div class="package-cols">
+          <div>
+            <h3>Core</h3>
+            <ul>
+              <li><code>Durably.Abstractions</code></li>
+              <li><code>Durably.Core</code></li>
+              <li><code>Durably.Extensions.DependencyInjection</code></li>
+              <li><code>Durably.Persistence.InMemory</code></li>
+              <li><code>Durably.Persistence.EntityFrameworkCore</code></li>
+            </ul>
+          </div>
+          <div>
+            <h3>Extras</h3>
+            <ul>
+              <li><code>Durably.Traceability</code> step traces</li>
+              <li><code>Durably.UI</code> embeddable dashboard</li>
+            </ul>
+          </div>
+        </div>
+        <p>
+          Typical app: Core + Extensions.DependencyInjection + one persistence package.
+          Add Traceability and UI when you want them.
+        </p>
+      </div>
+    </section>
+
+    <section class="section section-dashboard" id="dashboard" aria-labelledby="dashboard-title">
+      <div class="shell reveal">
+        <h2 id="dashboard-title">Dashboard</h2>
+        <p class="section-lead">
+          Search executions, open a run, and read step traces inside your ASP.NET Core app.
+        </p>
+      </div>
+      <figure class="shot reveal">
+        <img src="assets/dashboard-list.png" alt="Durably dashboard executions list" width="1200" height="675" loading="lazy" />
+        <figcaption>Executions list</figcaption>
+      </figure>
+      <figure class="shot reveal">
+        <img src="assets/dashboard-details.png" alt="Durably dashboard execution details with step traces" width="1200" height="675" loading="lazy" />
+        <figcaption>Execution details and traces</figcaption>
+      </figure>
+    </section>
+
+    <section class="section" id="start" aria-labelledby="start-title">
+      <div class="shell narrow reveal">
+        <h2 id="start-title">Get started</h2>
+        <p class="section-lead">Install the packages you need, then define a flow and register Durably.</p>
+
+        <pre class="code" tabindex="0"><code>dotnet add package Durably.Extensions.DependencyInjection
+dotnet add package Durably.Persistence.InMemory</code></pre>
+
+        <pre class="code" tabindex="0"><code>var flow = Flow.For&lt;OrderFinalizeState&gt;()
+    .Step&lt;GenerateReportStep&gt;()
+    .Step&lt;SendEmailStep&gt;()
+    .Step&lt;FinalizeOrderStep&gt;();
+
+builder.Services
+    .AddDurably()
+    .UseInMemoryStore()
+    .AddFlow(flow);</code></pre>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/mohd2sh/Durably#quick-start">Full quick start on GitHub</a>
+          <a class="btn btn-ghost" href="https://www.nuget.org/packages/Durably.Core">NuGet</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <p><strong>Durably</strong> · MIT License</p>
+      <p>
+        <a href="https://github.com/mohd2sh/Durably">GitHub</a>
+        ·
+        <a href="https://www.nuget.org/packages/Durably.Core">NuGet</a>
+        ·
+        <a href="https://github.com/mohd2sh/Durably/blob/main/LICENSE">License</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

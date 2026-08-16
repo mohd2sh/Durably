@@ -13,8 +13,8 @@ public static class DurablyUIEndpointRouteBuilderExtensions
     private const string ApiPlaceholder = "#apiPath#";
 
     /// <summary>
-    /// Maps the private JSON API and SPA at <paramref name="routePrefix"/> (default from options).
-    /// Anonymous by default (HealthChecks.UI style). Chain <c>RequireAuthorization()</c> to harden.
+    /// Maps the dashboard JSON API and SPA at <paramref name="routePrefix"/> (default from options).
+    /// Anonymous by default. Chain <c>RequireAuthorization()</c> to harden.
     /// </summary>
     public static IEndpointConventionBuilder MapDurablyUI(
         this IEndpointRouteBuilder endpoints,

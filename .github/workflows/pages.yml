@@ -1,0 +1,51 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/site/**'
+      - 'docs/images/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Sync shared images
+        run: |
+          mkdir -p docs/site/assets
+          cp "docs/images/Dashboard List Light theme.png" docs/site/assets/dashboard-list.png
+          cp "docs/images/Dashboard Details light theme.png" docs/site/assets/dashboard-details.png
+          cp "docs/images/icon.png" docs/site/assets/icon.png
+          cp "docs/images/Durably Logo.png" docs/site/assets/logo-web.png
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

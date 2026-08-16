@@ -1,6 +1,6 @@
 # Durably Samples
 
-Runnable examples for the main adoption paths. Prefer **Aspire + Docker** for durable SQL; use **InMemory** for zero-deps demos.
+Runnable examples for the main sample scenarios. Prefer **Aspire + Docker** for durable SQL; use **InMemory** for zero-deps demos.
 
 | Sample | Target | Role |
 |--------|--------|------|
@@ -78,4 +78,4 @@ No sample runs are auto-imported. The API only executes flows you start. The Wor
 
 ## Definition changes
 
-Inserting/reordering/removing steps on a live flow name can quarantine in-flight runs. Prefer a new flow name and drain the old one. See root docs `FLOW-DEFINITION-AND-RESUME.md`.
+Inserting/reordering/removing steps on a live flow name can quarantine in-flight runs. Prefer a new flow name, keep the old registration until non-terminal rows drain, then switch `StartAsync` call sites.

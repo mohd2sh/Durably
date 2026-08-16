@@ -22,12 +22,15 @@
     <ProjectReference Include="..\Durably.Abstractions\Durably.Abstractions.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildClientApp" Condition="Exists('ClientApp\package.json') And '$(SkipAngularBuild)' != 'true'">
+  <Target Name="BuildClientApp"
+          Condition="'$(DesignTimeBuild)' != 'true' And Exists('ClientApp\package.json') And '$(SkipAngularBuild)' != 'true'">
     <Exec WorkingDirectory="ClientApp" Command="npm run build -- --configuration production" />
   </Target>
 
-  <!-- Globbed inside a target so the SPA output is picked up after BuildClientApp runs. -->
-  <Target Name="AddDurablyUiAssets" BeforeTargets="AssignTargetPaths" DependsOnTargets="BuildClientApp">
+  <Target Name="AddDurablyUiAssets"
+          BeforeTargets="PrepareForBuild"
+          DependsOnTargets="BuildClientApp"
+          Condition="'$(DesignTimeBuild)' != 'true'">
     <ItemGroup>
       <DurablyUiAsset Include="wwwroot\**\*.*" />
       <EmbeddedResource Include="@(DurablyUiAsset)" LogicalName="wwwroot/%(RecursiveDir)%(Filename)%(Extension)" />

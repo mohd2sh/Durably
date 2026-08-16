@@ -21,7 +21,7 @@ public sealed class AddDurablyTests
         using var provider = services.BuildServiceProvider();
 
         // Assert — store/query come from a persistence provider; engine types that need
-        // IExecutionStore are registered but not resolvable until UseInMemoryStore / EF / Dapper.
+        // IExecutionStore are registered but not resolvable until UseInMemoryStore / EF.
         Assert.Null(provider.GetService<IExecutionStore>());
         Assert.IsType<ExecutionWorkSignal>(provider.GetRequiredService<IExecutionWorkSignal>());
         Assert.NotNull(provider.GetRequiredService<IStateSerializer>());

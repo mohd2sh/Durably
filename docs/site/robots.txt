@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mohd2sh.github.io/Durably/sitemap.xml

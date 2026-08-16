@@ -15,7 +15,6 @@
     <InternalsVisibleTo Include="Durably.Core.UnitTests" />
     <InternalsVisibleTo Include="Durably.Extensions.DependencyInjection" />
     <InternalsVisibleTo Include="Durably.Extensions.DependencyInjection.UnitTests" />
-    <InternalsVisibleTo Include="Durably.Persistence.Dapper" />
     <InternalsVisibleTo Include="Durably.Persistence.EntityFrameworkCore" />
     <InternalsVisibleTo Include="Durably.Persistence.InMemory" />
     <InternalsVisibleTo Include="Durably.Persistence.EntityFrameworkCore.UnitTests" />
