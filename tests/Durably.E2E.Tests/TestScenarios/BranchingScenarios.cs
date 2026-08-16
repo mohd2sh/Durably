@@ -63,10 +63,9 @@ public abstract class BranchingScenarios<TFixture> : ScenarioTestsBase<TFixture>
         Assert.Equal(1, counters.BranchA);
         Assert.Equal(0, counters.BranchB);
 
-        // New initial Kind is ignored; checkpointed Kind=a continues the A branch.
-        var start = await host.Engine.StartAsync(flow, "branch-resume", new BranchState { Kind = "b" });
-        Assert.Equal(FlowStartOutcome.AlreadyExists, start.Outcome);
-
+        // A Failed run is not "open"; resuming it happens via the explicit resume path
+        // (re-processing the same RunId), not by calling StartAsync again — that would
+        // instead create a brand new, independent run.
         var resumed = await host.ResumeFailedAsync(flow.Name, "branch-resume");
         Assert.Equal(FlowStatus.Completed, resumed.Status);
         Assert.Equal(2, counters.BranchA);
@@ -75,6 +74,10 @@ public abstract class BranchingScenarios<TFixture> : ScenarioTestsBase<TFixture>
         var state = await host.LoadStateAsync<BranchState>(flow.Name, "branch-resume");
         Assert.Equal("a", state.Path);
         Assert.Equal("a", state.Kind);
+
+        // Now that the run is Completed, starting again creates a fresh, independent run.
+        var start = await host.Engine.StartAsync(flow, "branch-resume", new BranchState { Kind = "b" });
+        Assert.Equal(FlowStartOutcome.Created, start.Outcome);
     }
 }
 

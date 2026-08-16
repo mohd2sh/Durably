@@ -17,11 +17,7 @@
       "tests\\Durably.Persistence.EntityFrameworkCore.IntegrationTests\\Durably.Persistence.EntityFrameworkCore.IntegrationTests.csproj",
       "tests\\Durably.E2E.Tests\\Durably.E2E.Tests.csproj",
       "tests\\Durably.Traceability.UnitTests\\Durably.Traceability.UnitTests.csproj",
-      "tests\\Durably.Traceability.IntegrationTests\\Durably.Traceability.IntegrationTests.csproj",
-      "samples\\Sample.AspNetCore.Api\\Sample.AspNetCore.Api.csproj",
-      "samples\\Sample.AspNetCore.ServiceDefaults\\Sample.AspNetCore.ServiceDefaults.csproj",
-      "samples\\Sample.AspNetCore.AppHost\\Sample.AspNetCore.AppHost.csproj",
-      "samples\\Sample.Worker\\Sample.Worker.csproj"
+      "tests\\Durably.Traceability.IntegrationTests\\Durably.Traceability.IntegrationTests.csproj"
     ]
   }
 }

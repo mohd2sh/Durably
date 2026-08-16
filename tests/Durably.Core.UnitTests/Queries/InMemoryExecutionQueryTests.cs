@@ -85,7 +85,7 @@ public sealed class InMemoryExecutionQueryTests
         await SeedAsync(store, OrdersFlow, InstanceA, ExecutionStatus.Running, "{}");
 
         // Act
-        var detail = await query.GetAsync(OrdersFlow, InstanceA, CancellationToken.None);
+        var detail = await query.GetAsync(OrdersFlow, InstanceA, runId: null, CancellationToken.None);
 
         // Assert
         Assert.NotNull(detail);
@@ -105,6 +105,7 @@ public sealed class InMemoryExecutionQueryTests
         await store.CreateAsync(new ExecutionRecord
         {
             FlowName = flowName,
+            RunId = Guid.NewGuid().ToString("N"),
             InstanceId = instanceId,
             Status = status,
             CurrentStep = 0,

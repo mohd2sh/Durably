@@ -18,7 +18,7 @@ namespace Durably.Persistence.EntityFrameworkCore.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("durable")
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("ProductVersion", "7.0.20")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -29,7 +29,7 @@ namespace Durably.Persistence.EntityFrameworkCore.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("InstanceId")
+                    b.Property<string>("RunId")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -50,6 +50,11 @@ namespace Durably.Persistence.EntityFrameworkCore.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FailedStep")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -77,7 +82,12 @@ namespace Durably.Persistence.EntityFrameworkCore.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
 
-                    b.HasKey("FlowName", "InstanceId");
+                    b.HasKey("FlowName", "RunId");
+
+                    b.HasIndex("FlowName", "InstanceId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_durable_Executions_Open_Flow_Instance")
+                        .HasFilter("[Status] IN (0, 3)");
 
                     b.HasIndex("Status", "LockedUntil", "CreatedAt")
                         .HasDatabaseName("IX_durable_Executions_Status_LockedUntil_CreatedAt");
@@ -121,6 +131,11 @@ namespace Durably.Persistence.EntityFrameworkCore.Migrations
                     b.Property<string>("OutputJson")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RunId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("StepKey")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -131,8 +146,8 @@ namespace Durably.Persistence.EntityFrameworkCore.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FlowName", "InstanceId", "Timestamp")
-                        .HasDatabaseName("IX_durable_Traces_Flow_Instance");
+                    b.HasIndex("FlowName", "RunId", "Timestamp")
+                        .HasDatabaseName("IX_durable_Traces_Flow_Run");
 
                     b.ToTable("Traces", "durable");
                 });

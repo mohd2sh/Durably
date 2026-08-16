@@ -5,6 +5,7 @@ internal static class TraceMapper
     public static TraceEntity ToEntity(TraceRecord record) => new()
     {
         FlowName = record.FlowName,
+        RunId = record.RunId,
         InstanceId = record.InstanceId,
         StepKey = record.StepKey,
         Attempt = record.Attempt,
@@ -19,6 +20,7 @@ internal static class TraceMapper
     public static TraceRecord ToRecord(TraceEntity entity) => new()
     {
         FlowName = entity.FlowName,
+        RunId = entity.RunId,
         InstanceId = entity.InstanceId,
         StepKey = entity.StepKey,
         Attempt = entity.Attempt,

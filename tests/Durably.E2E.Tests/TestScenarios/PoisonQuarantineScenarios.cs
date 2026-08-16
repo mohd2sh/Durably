@@ -38,10 +38,12 @@ public abstract class PoisonQuarantineScenarios<TFixture> : ScenarioTestsBase<TF
             });
 
         var now = DateTimeOffset.UtcNow;
+        var poisonRunId = Guid.NewGuid().ToString("N");
         await host.Store.CreateAsync(
             new ExecutionRecord
             {
                 FlowName = poisonFlowName,
+                RunId = poisonRunId,
                 InstanceId = poisonInstanceId,
                 Status = ExecutionStatus.Pending,
                 CurrentStep = 0,
@@ -71,7 +73,7 @@ public abstract class PoisonQuarantineScenarios<TFixture> : ScenarioTestsBase<TF
             TestLimits.DefaultWaitTimeout);
 
         // Assert
-        var poison = await host.Store.LoadAsync(poisonFlowName, poisonInstanceId, CancellationToken.None);
+        var poison = await host.Store.LoadAsync(poisonFlowName, poisonRunId, CancellationToken.None);
         Assert.Equal(ExecutionStatus.Failed, poison!.Status);
         Assert.Contains("not registered", poison.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
     }

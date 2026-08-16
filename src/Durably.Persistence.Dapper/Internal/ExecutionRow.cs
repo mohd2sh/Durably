@@ -4,6 +4,7 @@ namespace Durably;
 internal sealed class ExecutionRow
 {
     public string FlowName { get; set; } = string.Empty;
+    public string RunId { get; set; } = string.Empty;
     public string InstanceId { get; set; } = string.Empty;
     public int Status { get; set; }
     public int CurrentStep { get; set; }
@@ -22,6 +23,7 @@ internal sealed class ExecutionRow
     public static ExecutionRow From(ExecutionRecord record) => new()
     {
         FlowName = record.FlowName,
+        RunId = record.RunId,
         InstanceId = record.InstanceId,
         Status = (int)record.Status,
         CurrentStep = record.CurrentStep,
@@ -41,6 +43,7 @@ internal sealed class ExecutionRow
     public ExecutionRecord ToRecord() => new()
     {
         FlowName = FlowName,
+        RunId = RunId,
         InstanceId = InstanceId,
         Status = (ExecutionStatus)Status,
         CurrentStep = CurrentStep,

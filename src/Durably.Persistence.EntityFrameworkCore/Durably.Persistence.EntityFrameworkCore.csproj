@@ -1,10 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <PackageId>Durably.Persistence.EntityFrameworkCore</PackageId>
-    <Description>EF Core persistence for Durably: IExecutionStore, ITraceStore, and IExecutionQuery with migrations for SQL Server, PostgreSQL, and SQLite.</Description>
+    <Description>Entity Framework Core persistence for Durably on SQL Server, PostgreSQL, and SQLite. Provides the execution store, the trace store, and the query services used by the worker and the dashboard, with optional schema migration on startup.</Description>
+    <PackageTags>$(PackageTags);efcore;sqlserver;postgresql;sqlite</PackageTags>
+    <!-- Older TFM pins (esp. EF7 on net6) pull transitive packages with NuGet audit advisories we cannot patch without abandoning those TFMs. -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903</WarningsNotAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,6 +41,28 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.18" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.18" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.18" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.18">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

@@ -41,6 +41,8 @@ public static class TestLimits
 
     public const string BootstrapInstanceId = "__bootstrap__";
 
+    public const string BootstrapRunId = "__bootstrap__";
+
     public const string SqlServerContainerPassword = "Durably_Test_123!";
 
     public const string SqlServerImage = "mcr.microsoft.com/mssql/server:2022-latest";

@@ -7,6 +7,7 @@ export interface PagedResult<T> {
 
 export interface ExecutionSummary {
   flowName: string;
+  runId: string;
   instanceId: string;
   status: ExecutionStatus;
   currentStep: number;
@@ -27,6 +28,7 @@ export interface ExecutionDetail extends ExecutionSummary {
 
 export interface TraceRecord {
   flowName: string;
+  runId: string;
   instanceId: string;
   stepKey: string;
   attempt: number;
@@ -41,7 +43,8 @@ export interface TraceRecord {
 export enum ExecutionStatus {
   Running = 0,
   Completed = 1,
-  Failed = 2
+  Failed = 2,
+  Pending = 3
 }
 
 export enum TraceOutcome {
@@ -54,6 +57,7 @@ export interface ExecutionSearchParams {
   flowName?: string;
   status?: ExecutionStatus;
   instanceId?: string;
+  runId?: string;
   from?: string;
   to?: string;
   metadataKey?: string;

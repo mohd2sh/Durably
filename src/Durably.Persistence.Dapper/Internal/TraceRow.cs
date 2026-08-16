@@ -3,6 +3,7 @@ namespace Durably;
 internal sealed class TraceRow
 {
     public string FlowName { get; set; } = string.Empty;
+    public string RunId { get; set; } = string.Empty;
     public string InstanceId { get; set; } = string.Empty;
     public string StepKey { get; set; } = string.Empty;
     public int Attempt { get; set; }
@@ -16,6 +17,7 @@ internal sealed class TraceRow
     public static TraceRow From(TraceRecord record) => new()
     {
         FlowName = record.FlowName,
+        RunId = record.RunId,
         InstanceId = record.InstanceId,
         StepKey = record.StepKey,
         Attempt = record.Attempt,
@@ -30,6 +32,7 @@ internal sealed class TraceRow
     public TraceRecord ToRecord() => new()
     {
         FlowName = FlowName,
+        RunId = RunId,
         InstanceId = InstanceId,
         StepKey = StepKey,
         Attempt = Attempt,

@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OutputType>Library</OutputType>
     <IsPackable>true</IsPackable>
     <PackageId>Durably.UI</PackageId>
-    <Description>Embeddable Angular dashboard and JSON API for Durably execution and trace observability.</Description>
+    <Description>Embeddable dashboard and JSON API for Durably. Search executions, open a single run, and read its step traces inside your own ASP.NET Core app with AddDurablyUI and MapDurablyUI.</Description>
+    <PackageTags>$(PackageTags);dashboard;aspnetcore;ui</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <DefaultItemExcludes>$(DefaultItemExcludes);ClientApp\**\*</DefaultItemExcludes>
@@ -21,12 +22,16 @@
     <ProjectReference Include="..\Durably.Abstractions\Durably.Abstractions.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <Target Name="BuildClientApp" BeforeTargets="Build" Condition="Exists('ClientApp\package.json') And '$(SkipAngularBuild)' != 'true'">
+  <Target Name="BuildClientApp" Condition="Exists('ClientApp\package.json') And '$(SkipAngularBuild)' != 'true'">
     <Exec WorkingDirectory="ClientApp" Command="npm run build -- --configuration production" />
+  </Target>
+
+  <!-- Globbed inside a target so the SPA output is picked up after BuildClientApp runs. -->
+  <Target Name="AddDurablyUiAssets" BeforeTargets="AssignTargetPaths" DependsOnTargets="BuildClientApp">
+    <ItemGroup>
+      <DurablyUiAsset Include="wwwroot\**\*.*" />
+      <EmbeddedResource Include="@(DurablyUiAsset)" LogicalName="wwwroot/%(RecursiveDir)%(Filename)%(Extension)" />
+    </ItemGroup>
   </Target>
 
 </Project>

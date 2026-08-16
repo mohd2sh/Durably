@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 
 namespace Durably.Execution;
+
 /// <summary>
 /// An in-process <see cref="IExecutionStore"/> for testing and prototyping. Enforces optimistic
 /// concurrency and distributed-style execution leases in memory.
@@ -10,10 +11,31 @@ public sealed class InMemoryExecutionStore : IExecutionStore
     private readonly ConcurrentDictionary<string, ExecutionRecord> _records = new();
     private readonly object _claimGate = new();
 
-    public Task<ExecutionRecord?> LoadAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    public Task<ExecutionRecord?> LoadAsync(string flowName, string runId, CancellationToken cancellationToken)
     {
-        var found = _records.TryGetValue(Key(flowName, instanceId), out var record);
+        var found = _records.TryGetValue(Key(flowName, runId), out var record);
         return Task.FromResult(found ? Clone(record!) : null);
+    }
+
+    public Task<ExecutionRecord?> FindOpenAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    {
+        var open = _records.Values.FirstOrDefault(r =>
+            string.Equals(r.FlowName, flowName, StringComparison.Ordinal)
+            && string.Equals(r.InstanceId, instanceId, StringComparison.Ordinal)
+            && r.Status.IsOpen());
+        return Task.FromResult(open is null ? null : Clone(open));
+    }
+
+    public Task<ExecutionRecord?> LoadLatestAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    {
+        var latest = _records.Values
+            .Where(r =>
+                string.Equals(r.FlowName, flowName, StringComparison.Ordinal)
+                && string.Equals(r.InstanceId, instanceId, StringComparison.Ordinal))
+            .OrderByDescending(r => r.UpdatedAt)
+            .ThenByDescending(r => r.CreatedAt)
+            .FirstOrDefault();
+        return Task.FromResult(latest is null ? null : Clone(latest));
     }
 
     public Task CreateAsync(ExecutionRecord record, CancellationToken cancellationToken)
@@ -23,9 +45,26 @@ public sealed class InMemoryExecutionStore : IExecutionStore
             throw new ArgumentNullException(nameof(record));
         }
 
-        if (!_records.TryAdd(Key(record.FlowName, record.InstanceId), Clone(record)))
+        if (string.IsNullOrWhiteSpace(record.RunId))
         {
-            throw new ExecutionAlreadyExistsException(record.FlowName, record.InstanceId);
+            throw new ArgumentException("Run id is required.", nameof(record));
+        }
+
+        lock (_claimGate)
+        {
+            if (record.Status.IsOpen()
+                && _records.Values.Any(r =>
+                    string.Equals(r.FlowName, record.FlowName, StringComparison.Ordinal)
+                    && string.Equals(r.InstanceId, record.InstanceId, StringComparison.Ordinal)
+                    && r.Status.IsOpen()))
+            {
+                throw new ExecutionAlreadyExistsException(record.FlowName, record.InstanceId, record.RunId);
+            }
+
+            if (!_records.TryAdd(Key(record.FlowName, record.RunId), Clone(record)))
+            {
+                throw new ExecutionAlreadyExistsException(record.FlowName, record.InstanceId, record.RunId);
+            }
         }
 
         return Task.CompletedTask;
@@ -47,21 +86,21 @@ public sealed class InMemoryExecutionStore : IExecutionStore
             throw new ArgumentException("Runner id is required.", nameof(runnerId));
         }
 
-        var key = Key(record.FlowName, record.InstanceId);
+        var key = Key(record.FlowName, record.RunId);
         if (!_records.TryGetValue(key, out var current))
         {
             throw new InvalidOperationException(
-                $"Flow '{record.FlowName}' instance '{record.InstanceId}' does not exist.");
+                $"Flow '{record.FlowName}' run '{record.RunId}' does not exist.");
         }
 
         if (!string.Equals(current.LockedBy, runnerId, StringComparison.Ordinal))
         {
-            throw new LeaseLostException(record.FlowName, record.InstanceId);
+            throw new LeaseLostException(record.FlowName, record.RunId, record.InstanceId);
         }
 
         if (current.Version != record.Version)
         {
-            throw new ConcurrencyConflictException(record.FlowName, record.InstanceId);
+            throw new ConcurrencyConflictException(record.FlowName, record.RunId, record.InstanceId);
         }
 
         var next = Clone(record);
@@ -77,7 +116,7 @@ public sealed class InMemoryExecutionStore : IExecutionStore
 
     public Task<bool> TryAcquireLeaseAsync(
         string flowName,
-        string instanceId,
+        string runId,
         string runnerId,
         DateTimeOffset leaseUntil,
         CancellationToken cancellationToken)
@@ -89,7 +128,7 @@ public sealed class InMemoryExecutionStore : IExecutionStore
 
         lock (_claimGate)
         {
-            var key = Key(flowName, instanceId);
+            var key = Key(flowName, runId);
             if (!_records.TryGetValue(key, out var current))
             {
                 return Task.FromResult(false);
@@ -112,11 +151,11 @@ public sealed class InMemoryExecutionStore : IExecutionStore
         }
     }
 
-    public Task ReleaseLeaseAsync(string flowName, string instanceId, string runnerId, CancellationToken cancellationToken)
+    public Task ReleaseLeaseAsync(string flowName, string runId, string runnerId, CancellationToken cancellationToken)
     {
         lock (_claimGate)
         {
-            var key = Key(flowName, instanceId);
+            var key = Key(flowName, runId);
             if (!_records.TryGetValue(key, out var current))
             {
                 return Task.CompletedTask;
@@ -164,7 +203,7 @@ public sealed class InMemoryExecutionStore : IExecutionStore
                 candidate.LockedBy = runnerId;
                 candidate.LockedUntil = leaseUntil;
                 candidate.UpdatedAt = now;
-                _records[Key(candidate.FlowName, candidate.InstanceId)] = Clone(candidate);
+                _records[Key(candidate.FlowName, candidate.RunId)] = Clone(candidate);
                 claimed.Add(Clone(candidate));
             }
 
@@ -174,7 +213,7 @@ public sealed class InMemoryExecutionStore : IExecutionStore
 
     private static bool IsClaimable(ExecutionRecord record, DateTimeOffset now)
     {
-        if (record.Status is not ExecutionStatus.Pending and not ExecutionStatus.Running)
+        if (!record.Status.IsOpen())
         {
             return false;
         }
@@ -182,8 +221,8 @@ public sealed class InMemoryExecutionStore : IExecutionStore
         return record.LockedUntil is null || record.LockedUntil <= now;
     }
 
-    private static string Key(string flowName, string instanceId)
-        => flowName + DurablyLimits.InMemoryKeySeparator + instanceId;
+    private static string Key(string flowName, string runId)
+        => flowName + DurablyLimits.InMemoryKeySeparator + runId;
 
     internal IReadOnlyList<ExecutionRecord> SnapshotAll()
     {
@@ -193,6 +232,7 @@ public sealed class InMemoryExecutionStore : IExecutionStore
     private static ExecutionRecord Clone(ExecutionRecord source) => new()
     {
         FlowName = source.FlowName,
+        RunId = source.RunId,
         InstanceId = source.InstanceId,
         Status = source.Status,
         CurrentStep = source.CurrentStep,

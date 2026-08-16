@@ -1,9 +1,11 @@
 namespace Durably.Queries;
+
 internal static class ExecutionProjectionMapper
 {
     public static ExecutionSummary ToSummary(ExecutionRecord record) => new()
     {
         FlowName = record.FlowName,
+        RunId = record.RunId,
         InstanceId = record.InstanceId,
         Status = record.Status,
         CurrentStep = record.CurrentStep,
@@ -18,6 +20,7 @@ internal static class ExecutionProjectionMapper
     public static ExecutionDetail ToDetail(ExecutionRecord record) => new()
     {
         FlowName = record.FlowName,
+        RunId = record.RunId,
         InstanceId = record.InstanceId,
         Status = record.Status,
         CurrentStep = record.CurrentStep,

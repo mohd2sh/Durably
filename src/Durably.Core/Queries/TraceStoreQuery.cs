@@ -1,4 +1,5 @@
 namespace Durably.Queries;
+
 /// <summary>Read-only trace queries backed by the configured <see cref="ITraceStore"/>.</summary>
 internal sealed class TraceStoreQuery : ITraceQuery
 {
@@ -11,7 +12,7 @@ internal sealed class TraceStoreQuery : ITraceQuery
 
     public Task<IReadOnlyList<TraceRecord>> GetTracesAsync(
         string flowName,
-        string instanceId,
+        string runId,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(flowName))
@@ -19,11 +20,11 @@ internal sealed class TraceStoreQuery : ITraceQuery
             throw new ArgumentException("Flow name is required.", nameof(flowName));
         }
 
-        if (string.IsNullOrWhiteSpace(instanceId))
+        if (string.IsNullOrWhiteSpace(runId))
         {
-            throw new ArgumentException("Instance id is required.", nameof(instanceId));
+            throw new ArgumentException("Run id is required.", nameof(runId));
         }
 
-        return _store.LoadAsync(flowName, instanceId, cancellationToken);
+        return _store.LoadAsync(flowName, runId, cancellationToken);
     }
 }

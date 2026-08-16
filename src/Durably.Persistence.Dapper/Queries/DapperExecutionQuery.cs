@@ -44,7 +44,11 @@ internal sealed class DapperExecutionQuery : IExecutionQuery
         };
     }
 
-    public async Task<ExecutionDetail?> GetAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    public async Task<ExecutionDetail?> GetAsync(
+        string flowName,
+        string instanceId,
+        string? runId,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(flowName))
         {
@@ -57,11 +61,60 @@ internal sealed class DapperExecutionQuery : IExecutionQuery
         }
 
         using var connection = await _runner.OpenAsync(cancellationToken).ConfigureAwait(false);
-        var row = await connection.QueryFirstOrDefaultAsync<ExecutionRow>(
-            new CommandDefinition(_runner.Dialect.LoadSql, new { FlowName = flowName, InstanceId = instanceId },
-                cancellationToken: cancellationToken, commandTimeout: _runner.Options.CommandTimeoutSeconds)).ConfigureAwait(false);
+
+        ExecutionRow? row;
+        if (!string.IsNullOrWhiteSpace(runId))
+        {
+            row = await connection.QueryFirstOrDefaultAsync<ExecutionRow>(
+                new CommandDefinition(
+                    _runner.Dialect.LoadSql,
+                    new { FlowName = flowName, RunId = runId },
+                    cancellationToken: cancellationToken,
+                    commandTimeout: _runner.Options.CommandTimeoutSeconds)).ConfigureAwait(false);
+
+            if (row is not null
+                && !string.Equals(row.InstanceId, instanceId, StringComparison.Ordinal))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            row = await connection.QueryFirstOrDefaultAsync<ExecutionRow>(
+                new CommandDefinition(
+                    _runner.Dialect.LoadLatestSql,
+                    new { FlowName = flowName, InstanceId = instanceId },
+                    cancellationToken: cancellationToken,
+                    commandTimeout: _runner.Options.CommandTimeoutSeconds)).ConfigureAwait(false);
+        }
 
         return row is null ? null : ExecutionProjectionMapper.ToDetail(row.ToRecord());
+    }
+
+    public async Task<IReadOnlyList<ExecutionSummary>> ListRunsAsync(
+        string flowName,
+        string instanceId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(flowName))
+        {
+            throw new ArgumentException("Flow name is required.", nameof(flowName));
+        }
+
+        if (string.IsNullOrWhiteSpace(instanceId))
+        {
+            throw new ArgumentException("Instance id is required.", nameof(instanceId));
+        }
+
+        using var connection = await _runner.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await connection.QueryAsync<ExecutionRow>(
+            new CommandDefinition(
+                _runner.Dialect.ListRunsSql,
+                new { FlowName = flowName, InstanceId = instanceId },
+                cancellationToken: cancellationToken,
+                commandTimeout: _runner.Options.CommandTimeoutSeconds)).ConfigureAwait(false);
+
+        return rows.Select(row => ExecutionProjectionMapper.ToSummary(row.ToRecord())).ToList();
     }
 
     private static int NormalizeTake(int take)

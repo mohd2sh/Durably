@@ -50,7 +50,7 @@ UPDATE candidates
 SET LockedBy = @RunnerId,
     LockedUntil = @LockedUntil,
     UpdatedAt = SYSUTCDATETIME()
-OUTPUT inserted.FlowName, inserted.InstanceId, inserted.Status, inserted.CurrentStep, inserted.ContextJson,
+OUTPUT inserted.FlowName, inserted.RunId, inserted.InstanceId, inserted.Status, inserted.CurrentStep, inserted.ContextJson,
        inserted.StepPathHash, inserted.Attempts, inserted.FailedStep, inserted.ErrorMessage, inserted.Version, inserted.CreatedAt,
        inserted.UpdatedAt, inserted.LockedBy, inserted.LockedUntil, inserted.MetadataJson;";
 
@@ -71,8 +71,8 @@ $@"UPDATE {table} AS e
 SET ""LockedBy"" = @RunnerId,
     ""LockedUntil"" = @LockedUntil,
     ""UpdatedAt"" = (now() AT TIME ZONE 'utc')
-WHERE (""FlowName"", ""InstanceId"") IN (
-    SELECT ""FlowName"", ""InstanceId""
+WHERE (""FlowName"", ""RunId"") IN (
+    SELECT ""FlowName"", ""RunId""
     FROM {table}
     WHERE (""Status"" = @Pending OR ""Status"" = @Running)
       AND (""LockedUntil"" IS NULL OR ""LockedUntil"" <= (now() AT TIME ZONE 'utc'))
@@ -80,7 +80,7 @@ WHERE (""FlowName"", ""InstanceId"") IN (
     LIMIT @BatchSize
     FOR UPDATE SKIP LOCKED)
 RETURNING
-    ""FlowName"", ""InstanceId"", ""Status"", ""CurrentStep"", ""ContextJson"", ""StepPathHash"", ""Attempts"",
+    ""FlowName"", ""RunId"", ""InstanceId"", ""Status"", ""CurrentStep"", ""ContextJson"", ""StepPathHash"", ""Attempts"",
     ""FailedStep"", ""ErrorMessage"", ""Version"", ""CreatedAt"", ""UpdatedAt"",
     ""LockedBy"", ""LockedUntil"", ""MetadataJson"";";
 
@@ -110,7 +110,7 @@ WHERE rowid IN (
     ORDER BY CreatedAt
     LIMIT @BatchSize
 )
-RETURNING FlowName, InstanceId, Status, CurrentStep, ContextJson, StepPathHash, Attempts, FailedStep, ErrorMessage,
+RETURNING FlowName, RunId, InstanceId, Status, CurrentStep, ContextJson, StepPathHash, Attempts, FailedStep, ErrorMessage,
           Version, CreatedAt, UpdatedAt, LockedBy, LockedUntil, MetadataJson;";
 
         var claimed = await ExecuteAsync(
@@ -176,6 +176,7 @@ RETURNING FlowName, InstanceId, Status, CurrentStep, ContextJson, StepPathHash, 
         return new ExecutionRecord
         {
             FlowName = reader.GetString(reader.GetOrdinal("FlowName")),
+            RunId = reader.GetString(reader.GetOrdinal("RunId")),
             InstanceId = reader.GetString(reader.GetOrdinal("InstanceId")),
             Status = (ExecutionStatus)reader.GetInt32(reader.GetOrdinal("Status")),
             CurrentStep = reader.GetInt32(reader.GetOrdinal("CurrentStep")),

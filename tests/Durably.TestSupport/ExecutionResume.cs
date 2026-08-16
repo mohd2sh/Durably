@@ -32,14 +32,12 @@ internal static class ExecutionResume
             return await processor.ProcessAsync(match, resolvedRunnerId, leaseDuration);
         }
 
-        if (await store.LoadAsync(flowName, instanceId, CancellationToken.None) is null)
-        {
-            throw new InvalidOperationException($"No execution found for '{flowName}/{instanceId}'.");
-        }
+        var current = await store.LoadLatestAsync(flowName, instanceId, CancellationToken.None)
+            ?? throw new InvalidOperationException($"No execution found for '{flowName}/{instanceId}'.");
 
         if (!await store.TryAcquireLeaseAsync(
                 flowName,
-                instanceId,
+                current.RunId,
                 resolvedRunnerId,
                 leaseUntil,
                 CancellationToken.None))
@@ -47,7 +45,7 @@ internal static class ExecutionResume
             return FlowRunResult.AlreadyRunning();
         }
 
-        var leased = await store.LoadAsync(flowName, instanceId, CancellationToken.None)
+        var leased = await store.LoadAsync(flowName, current.RunId, CancellationToken.None)
             ?? throw new InvalidOperationException("Execution disappeared after lease acquisition.");
         return await processor.ProcessAsync(leased, resolvedRunnerId, leaseDuration);
     }
@@ -65,7 +63,7 @@ internal static class ExecutionResume
         var resolvedRunnerId = runnerId ?? DefaultRunnerId;
         var leaseDuration = TestLimits.DefaultLeaseDuration;
         var leaseUntil = DateTimeOffset.UtcNow.Add(leaseDuration);
-        var record = await store.LoadAsync(flowName, instanceId, CancellationToken.None)
+        var record = await store.LoadLatestAsync(flowName, instanceId, CancellationToken.None)
             ?? throw new InvalidOperationException($"No execution found for flow '{flowName}' instance '{instanceId}'.");
 
         if (record.Status != ExecutionStatus.Failed)
@@ -76,7 +74,7 @@ internal static class ExecutionResume
 
         if (!await store.TryAcquireLeaseAsync(
                 flowName,
-                instanceId,
+                record.RunId,
                 resolvedRunnerId,
                 leaseUntil,
                 CancellationToken.None))
@@ -84,7 +82,7 @@ internal static class ExecutionResume
             return FlowRunResult.AlreadyRunning();
         }
 
-        var leased = await store.LoadAsync(flowName, instanceId, CancellationToken.None)
+        var leased = await store.LoadAsync(flowName, record.RunId, CancellationToken.None)
             ?? throw new InvalidOperationException("Execution disappeared after lease acquisition.");
         return await processor.ProcessAsync(leased, resolvedRunnerId, leaseDuration);
     }

@@ -1,18 +1,32 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Options;
 
 namespace Durably;
 
 internal static class ExecutionsEndpoints
 {
-    public static RouteGroupBuilder MapExecutionsEndpoints(this RouteGroupBuilder group)
+    public static IReadOnlyList<IEndpointConventionBuilder> MapExecutionsEndpoints(
+        this IEndpointRouteBuilder endpoints,
+        string apiPath)
     {
-        group.MapGet($"/{DurablyUIRoutes.Executions}", SearchExecutionsAsync);
-        group.MapGet($"/{DurablyUIRoutes.Executions}/{{flowName}}/{{instanceId}}", GetExecutionAsync);
-        group.MapGet($"/{DurablyUIRoutes.Executions}/{{flowName}}/{{instanceId}}/traces", GetTracesAsync);
-        return group;
+        if (endpoints is null)
+        {
+            throw new ArgumentNullException(nameof(endpoints));
+        }
+
+        if (string.IsNullOrWhiteSpace(apiPath))
+        {
+            throw new ArgumentException("API path is required.", nameof(apiPath));
+        }
+
+        var root = $"{apiPath}/{DurablyUIRoutes.Executions}";
+        return
+        [
+            endpoints.MapGet(root, SearchExecutionsAsync).ExcludeFromApiDescription(),
+            endpoints.MapGet($"{root}/{{flowName}}/{{instanceId}}/{{runId}}", GetExecutionAsync).ExcludeFromApiDescription(),
+            endpoints.MapGet($"{root}/{{flowName}}/{{instanceId}}/{{runId}}/traces", GetTracesAsync).ExcludeFromApiDescription()
+        ];
     }
 
     private static async Task<IResult> SearchExecutionsAsync(
@@ -20,6 +34,7 @@ internal static class ExecutionsEndpoints
         string? flowName,
         ExecutionStatus? status,
         string? instanceId,
+        string? runId,
         DateTimeOffset? from,
         DateTimeOffset? to,
         string? metadataKey,
@@ -33,6 +48,7 @@ internal static class ExecutionsEndpoints
             FlowName = flowName,
             Status = status,
             InstanceId = instanceId,
+            RunId = runId,
             From = from,
             To = to,
             MetadataKey = metadataKey,
@@ -49,14 +65,17 @@ internal static class ExecutionsEndpoints
         IExecutionQuery query,
         string flowName,
         string instanceId,
+        string runId,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(flowName) || string.IsNullOrWhiteSpace(instanceId))
+        if (string.IsNullOrWhiteSpace(flowName)
+            || string.IsNullOrWhiteSpace(instanceId)
+            || string.IsNullOrWhiteSpace(runId))
         {
-            return Results.BadRequest("Flow name and instance id are required.");
+            return Results.BadRequest("Flow name, instance id, and run id are required.");
         }
 
-        var detail = await query.GetAsync(flowName, instanceId, cancellationToken).ConfigureAwait(false);
+        var detail = await query.GetAsync(flowName, instanceId, runId, cancellationToken).ConfigureAwait(false);
         if (detail is null)
         {
             return Results.NotFound();
@@ -69,14 +88,17 @@ internal static class ExecutionsEndpoints
         ITraceQuery traceQuery,
         string flowName,
         string instanceId,
+        string runId,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(flowName) || string.IsNullOrWhiteSpace(instanceId))
+        if (string.IsNullOrWhiteSpace(flowName)
+            || string.IsNullOrWhiteSpace(instanceId)
+            || string.IsNullOrWhiteSpace(runId))
         {
-            return Results.BadRequest("Flow name and instance id are required.");
+            return Results.BadRequest("Flow name, instance id, and run id are required.");
         }
 
-        var traces = await traceQuery.GetTracesAsync(flowName, instanceId, cancellationToken).ConfigureAwait(false);
+        var traces = await traceQuery.GetTracesAsync(flowName, runId, cancellationToken).ConfigureAwait(false);
         return Results.Ok(traces);
     }
 }

@@ -1,4 +1,5 @@
 namespace Durably.Queries;
+
 /// <summary>In-memory read-only execution queries for tests and local development.</summary>
 internal sealed class InMemoryExecutionQuery : IExecutionQuery
 {
@@ -35,7 +36,11 @@ internal sealed class InMemoryExecutionQuery : IExecutionQuery
         });
     }
 
-    public Task<ExecutionDetail?> GetAsync(string flowName, string instanceId, CancellationToken cancellationToken)
+    public Task<ExecutionDetail?> GetAsync(
+        string flowName,
+        string instanceId,
+        string? runId,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(flowName))
         {
@@ -47,12 +52,53 @@ internal sealed class InMemoryExecutionQuery : IExecutionQuery
             throw new ArgumentException("Instance id is required.", nameof(instanceId));
         }
 
-        var record = _store.SnapshotAll()
-            .FirstOrDefault(item =>
+        var matches = _store.SnapshotAll()
+            .Where(item =>
                 string.Equals(item.FlowName, flowName, StringComparison.Ordinal)
                 && string.Equals(item.InstanceId, instanceId, StringComparison.Ordinal));
 
+        ExecutionRecord? record;
+        if (!string.IsNullOrWhiteSpace(runId))
+        {
+            record = matches.FirstOrDefault(item =>
+                string.Equals(item.RunId, runId, StringComparison.Ordinal));
+        }
+        else
+        {
+            record = matches
+                .OrderByDescending(item => item.UpdatedAt)
+                .ThenByDescending(item => item.CreatedAt)
+                .FirstOrDefault();
+        }
+
         return Task.FromResult(record is null ? null : ExecutionProjectionMapper.ToDetail(record));
+    }
+
+    public Task<IReadOnlyList<ExecutionSummary>> ListRunsAsync(
+        string flowName,
+        string instanceId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(flowName))
+        {
+            throw new ArgumentException("Flow name is required.", nameof(flowName));
+        }
+
+        if (string.IsNullOrWhiteSpace(instanceId))
+        {
+            throw new ArgumentException("Instance id is required.", nameof(instanceId));
+        }
+
+        var runs = _store.SnapshotAll()
+            .Where(item =>
+                string.Equals(item.FlowName, flowName, StringComparison.Ordinal)
+                && string.Equals(item.InstanceId, instanceId, StringComparison.Ordinal))
+            .OrderByDescending(item => item.UpdatedAt)
+            .ThenByDescending(item => item.CreatedAt)
+            .Select(ExecutionProjectionMapper.ToSummary)
+            .ToList();
+
+        return Task.FromResult<IReadOnlyList<ExecutionSummary>>(runs);
     }
 
     private static int NormalizeTake(int take)

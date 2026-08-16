@@ -45,7 +45,7 @@ public abstract class DatabaseFixtureBase : IDatabaseFixture
         var store = provider.GetRequiredService<IExecutionStore>();
         _ = await store.LoadAsync(
             TestLimits.BootstrapFlowName,
-            TestLimits.BootstrapInstanceId,
+            TestLimits.BootstrapRunId,
             CancellationToken.None);
     }
 

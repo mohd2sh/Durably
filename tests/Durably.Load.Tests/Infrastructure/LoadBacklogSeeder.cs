@@ -54,6 +54,7 @@ internal static class LoadBacklogSeeder
                         new ExecutionRecord
                         {
                             FlowName = flowName,
+                            RunId = Guid.NewGuid().ToString("N"),
                             InstanceId = $"{instancePrefix}{index}",
                             Status = ExecutionStatus.Pending,
                             CurrentStep = 0,

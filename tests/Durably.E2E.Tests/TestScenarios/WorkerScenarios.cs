@@ -85,6 +85,7 @@ public abstract class WorkerScenarios<TFixture> : ScenarioTestsBase<TFixture>
         await store.CreateAsync(new ExecutionRecord
         {
             FlowName = flow.Name,
+            RunId = Guid.NewGuid().ToString("N"),
             InstanceId = "reclaim-1",
             Status = ExecutionStatus.Running,
             CurrentStep = 0,

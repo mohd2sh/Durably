@@ -28,11 +28,12 @@ public sealed class InMemoryExecutionStoreTests
     {
         // Arrange
         var store = new InMemoryExecutionStore();
-        await store.CreateAsync(CreatePendingRecord(FlowName, InstanceId), CancellationToken.None);
+        var created = CreatePendingRecord(FlowName, InstanceId);
+        await store.CreateAsync(created, CancellationToken.None);
         var leaseUntil = DateTimeOffset.UtcNow.Add(LeaseDuration);
-        Assert.True(await store.TryAcquireLeaseAsync(FlowName, InstanceId, RunnerId, leaseUntil, CancellationToken.None));
+        Assert.True(await store.TryAcquireLeaseAsync(FlowName, created.RunId, RunnerId, leaseUntil, CancellationToken.None));
 
-        var loaded = await store.LoadAsync(FlowName, InstanceId, CancellationToken.None);
+        var loaded = await store.LoadAsync(FlowName, created.RunId, CancellationToken.None);
         Assert.NotNull(loaded);
         Assert.Equal(0, loaded!.Version);
         loaded.CurrentStep = 1;
@@ -43,7 +44,7 @@ public sealed class InMemoryExecutionStoreTests
 
         // Assert
         Assert.Equal(1, loaded.Version);
-        var reloaded = await store.LoadAsync(FlowName, InstanceId, CancellationToken.None);
+        var reloaded = await store.LoadAsync(FlowName, created.RunId, CancellationToken.None);
         Assert.Equal(1, reloaded!.Version);
         Assert.Equal(ExecutionStatus.Completed, reloaded.Status);
     }
@@ -53,11 +54,12 @@ public sealed class InMemoryExecutionStoreTests
     {
         // Arrange
         var store = new InMemoryExecutionStore();
-        await store.CreateAsync(CreatePendingRecord(FlowName, InstanceId), CancellationToken.None);
+        var created = CreatePendingRecord(FlowName, InstanceId);
+        await store.CreateAsync(created, CancellationToken.None);
         var leaseUntil = DateTimeOffset.UtcNow.Add(LeaseDuration);
-        Assert.True(await store.TryAcquireLeaseAsync(FlowName, InstanceId, RunnerId, leaseUntil, CancellationToken.None));
-        var record = await store.LoadAsync(FlowName, InstanceId, CancellationToken.None);
-        await store.ReleaseLeaseAsync(FlowName, InstanceId, RunnerId, CancellationToken.None);
+        Assert.True(await store.TryAcquireLeaseAsync(FlowName, created.RunId, RunnerId, leaseUntil, CancellationToken.None));
+        var record = await store.LoadAsync(FlowName, created.RunId, CancellationToken.None);
+        await store.ReleaseLeaseAsync(FlowName, created.RunId, RunnerId, CancellationToken.None);
 
         // Act / Assert
         await Assert.ThrowsAsync<LeaseLostException>(() =>
@@ -75,14 +77,15 @@ public sealed class InMemoryExecutionStoreTests
         const string failedFlow = "failed-flow";
         const string completedFlow = "completed-flow";
 
+        var runningRecord = CreateRecord(runningExpiredFlow, "r1", ExecutionStatus.Running, now);
         await store.CreateAsync(CreateRecord(pendingFlow, "p1", ExecutionStatus.Pending, now), CancellationToken.None);
-        await store.CreateAsync(CreateRecord(runningExpiredFlow, "r1", ExecutionStatus.Running, now), CancellationToken.None);
+        await store.CreateAsync(runningRecord, CancellationToken.None);
         await store.CreateAsync(CreateRecord(failedFlow, "f1", ExecutionStatus.Failed, now), CancellationToken.None);
         await store.CreateAsync(CreateRecord(completedFlow, "c1", ExecutionStatus.Completed, now), CancellationToken.None);
 
         var expiredLease = now.AddMinutes(-5);
         Assert.True(await store.TryAcquireLeaseAsync(
-            runningExpiredFlow, "r1", RunnerId, expiredLease, CancellationToken.None));
+            runningExpiredFlow, runningRecord.RunId, RunnerId, expiredLease, CancellationToken.None));
 
         var claimLeaseUntil = now.Add(LeaseDuration);
         const int batchSize = 10;
@@ -130,18 +133,19 @@ public sealed class InMemoryExecutionStoreTests
     {
         // Arrange
         var store = new InMemoryExecutionStore();
-        await store.CreateAsync(CreatePendingRecord(FlowName, InstanceId), CancellationToken.None);
+        var created = CreatePendingRecord(FlowName, InstanceId);
+        await store.CreateAsync(created, CancellationToken.None);
         var leaseUntil = DateTimeOffset.UtcNow.Add(LeaseDuration);
-        Assert.True(await store.TryAcquireLeaseAsync(FlowName, InstanceId, RunnerId, leaseUntil, CancellationToken.None));
+        Assert.True(await store.TryAcquireLeaseAsync(FlowName, created.RunId, RunnerId, leaseUntil, CancellationToken.None));
 
         // Act
-        await store.ReleaseLeaseAsync(FlowName, InstanceId, RunnerId, CancellationToken.None);
+        await store.ReleaseLeaseAsync(FlowName, created.RunId, RunnerId, CancellationToken.None);
 
         // Assert
-        var loaded = await store.LoadAsync(FlowName, InstanceId, CancellationToken.None);
+        var loaded = await store.LoadAsync(FlowName, created.RunId, CancellationToken.None);
         Assert.Null(loaded!.LockedBy);
         Assert.Null(loaded.LockedUntil);
-        Assert.True(await store.TryAcquireLeaseAsync(FlowName, InstanceId, OtherRunnerId, leaseUntil, CancellationToken.None));
+        Assert.True(await store.TryAcquireLeaseAsync(FlowName, created.RunId, OtherRunnerId, leaseUntil, CancellationToken.None));
     }
 
     private static ExecutionRecord CreatePendingRecord(string flowName, string instanceId)
@@ -155,6 +159,7 @@ public sealed class InMemoryExecutionStoreTests
         => new()
         {
             FlowName = flowName,
+            RunId = Guid.NewGuid().ToString("N"),
             InstanceId = instanceId,
             Status = status,
             CurrentStep = 0,

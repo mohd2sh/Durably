@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <PackageId>Durably.Core</PackageId>
-    <Description>The Durably durable-execution engine: fluent flow builder, run-or-resume engine, and retry.</Description>
+    <Description>The Durably workflow engine for .NET. Define a flow as ordinary C# steps with Flow.For, checkpoint state after every step, and resume from the last completed step after a crash or a restart.</Description>
+    <PackageTags>$(PackageTags);engine;state-machine</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

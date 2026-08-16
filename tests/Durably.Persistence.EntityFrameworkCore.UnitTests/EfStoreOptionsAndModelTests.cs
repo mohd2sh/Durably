@@ -7,7 +7,7 @@ public sealed class EfStoreOptionsAndModelTests
 {
     private const string DefaultSchema = "durable";
     private const int ExpectedFlowNameMaxLength = 200;
-    private const int ExpectedInstanceIdMaxLength = 200;
+    private const int ExpectedRunIdMaxLength = 200;
     private const int DefaultCommandTimeoutSeconds = 30;
 
     [Fact]
@@ -38,16 +38,16 @@ public sealed class EfStoreOptionsAndModelTests
         Assert.NotNull(entityType);
         var primaryKey = entityType!.FindPrimaryKey();
         var flowName = entityType.FindProperty(nameof(ExecutionEntity.FlowName));
-        var instanceId = entityType.FindProperty(nameof(ExecutionEntity.InstanceId));
+        var runId = entityType.FindProperty(nameof(ExecutionEntity.RunId));
         var version = entityType.FindProperty(nameof(ExecutionEntity.Version));
 
-        // Assert
+        // Assert — identity is (FlowName, RunId); InstanceId is the business key, not part of the PK.
         Assert.NotNull(primaryKey);
         Assert.Equal(2, primaryKey!.Properties.Count);
         Assert.Contains(primaryKey.Properties, p => p.Name == nameof(ExecutionEntity.FlowName));
-        Assert.Contains(primaryKey.Properties, p => p.Name == nameof(ExecutionEntity.InstanceId));
+        Assert.Contains(primaryKey.Properties, p => p.Name == nameof(ExecutionEntity.RunId));
         Assert.Equal(ExpectedFlowNameMaxLength, flowName!.GetMaxLength());
-        Assert.Equal(ExpectedInstanceIdMaxLength, instanceId!.GetMaxLength());
+        Assert.Equal(ExpectedRunIdMaxLength, runId!.GetMaxLength());
         Assert.True(version!.IsConcurrencyToken);
     }
 }

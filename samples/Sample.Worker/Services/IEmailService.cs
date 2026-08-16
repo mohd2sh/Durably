@@ -2,5 +2,5 @@ namespace Sample.Worker.Services;
 
 public interface IEmailService
 {
-    Task SendAsync(string orderId, CancellationToken cancellationToken);
+    Task SendAsync(string orderId, string idempotencyKey, CancellationToken cancellationToken);
 }

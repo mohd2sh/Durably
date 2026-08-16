@@ -18,6 +18,7 @@ public abstract class StoreScenarios<TFixture> : ScenarioTestsBase<TFixture>
         var record = new ExecutionRecord
         {
             FlowName = "round-trip",
+            RunId = Guid.NewGuid().ToString("N"),
             InstanceId = "one",
             Status = ExecutionStatus.Running,
             CurrentStep = 0,
@@ -32,9 +33,9 @@ public abstract class StoreScenarios<TFixture> : ScenarioTestsBase<TFixture>
 
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration);
         const string runner = "e2e-runner";
-        Assert.True(await store.TryAcquireLeaseAsync("round-trip", "one", runner, leaseUntil, default));
+        Assert.True(await store.TryAcquireLeaseAsync("round-trip", record.RunId, runner, leaseUntil, default));
 
-        var loaded = await store.LoadAsync("round-trip", "one", default);
+        var loaded = await store.LoadAsync("round-trip", record.RunId, default);
         Assert.NotNull(loaded);
         Assert.Equal("{\"value\":1}", loaded!.ContextJson);
         Assert.Equal(0, loaded.Version);
@@ -43,13 +44,13 @@ public abstract class StoreScenarios<TFixture> : ScenarioTestsBase<TFixture>
         loaded.Status = ExecutionStatus.Completed;
         await store.SaveCheckpointAsync(loaded, runner, leaseUntil, default);
 
-        var reloaded = await store.LoadAsync("round-trip", "one", default);
+        var reloaded = await store.LoadAsync("round-trip", record.RunId, default);
         Assert.Equal(1, reloaded!.CurrentStep);
         Assert.Equal(1, reloaded.Version);
         Assert.Equal(ExecutionStatus.Completed, reloaded.Status);
 
         await Database.ResetAsync();
-        var afterReset = await store.LoadAsync("round-trip", "one", default);
+        var afterReset = await store.LoadAsync("round-trip", record.RunId, default);
         Assert.Null(afterReset);
     }
 
@@ -59,9 +60,10 @@ public abstract class StoreScenarios<TFixture> : ScenarioTestsBase<TFixture>
         await ResetAsync();
         var store = NewExecutionStore();
         var now = DateTimeOffset.UtcNow;
-        await store.CreateAsync(new ExecutionRecord
+        var created = new ExecutionRecord
         {
             FlowName = "lease-lost",
+            RunId = Guid.NewGuid().ToString("N"),
             InstanceId = "one",
             Status = ExecutionStatus.Running,
             CurrentStep = 0,
@@ -70,13 +72,14 @@ public abstract class StoreScenarios<TFixture> : ScenarioTestsBase<TFixture>
             Version = 0,
             CreatedAt = now,
             UpdatedAt = now
-        }, default);
+        };
+        await store.CreateAsync(created, default);
 
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration);
-        Assert.True(await store.TryAcquireLeaseAsync("lease-lost", "one", "owner", leaseUntil, default));
+        Assert.True(await store.TryAcquireLeaseAsync("lease-lost", created.RunId, "owner", leaseUntil, default));
 
-        var record = await store.LoadAsync("lease-lost", "one", default);
-        await store.ReleaseLeaseAsync("lease-lost", "one", "owner", default);
+        var record = await store.LoadAsync("lease-lost", created.RunId, default);
+        await store.ReleaseLeaseAsync("lease-lost", created.RunId, "owner", default);
 
         await Assert.ThrowsAsync<LeaseLostException>(() =>
             store.SaveCheckpointAsync(record!, "other-runner", leaseUntil, default));

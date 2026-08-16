@@ -13,7 +13,7 @@
           Back to list
         </a>
         <h1 class="page-title mono">{{ execution.instanceId }}</h1>
-        <p class="page-subtitle">{{ execution.flowName }}</p>
+        <p class="page-subtitle">{{ execution.flowName }} · run {{ execution.runId }}</p>
       </div>
       <app-status-badge
         [label]="statusLabel(execution.status)"

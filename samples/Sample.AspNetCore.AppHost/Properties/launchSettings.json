@@ -9,8 +9,8 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development",
-        "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "https://localhost:21234",
-        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22234"
+        "ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL": "https://localhost:21234",
+        "ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22234"
       }
     }
   }

@@ -15,9 +15,11 @@ public sealed class ExecutionProcessorUnitTests
         // Arrange
         var harness = EngineTestHarness.Create();
         const string missingFlowName = "Missing.Flow";
+        var runId = Guid.NewGuid().ToString("N");
         await harness.Store.CreateAsync(new ExecutionRecord
         {
             FlowName = missingFlowName,
+            RunId = runId,
             InstanceId = InstanceId,
             Status = ExecutionStatus.Pending,
             CurrentStep = 0,
@@ -30,8 +32,8 @@ public sealed class ExecutionProcessorUnitTests
 
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration);
         Assert.True(await harness.Store.TryAcquireLeaseAsync(
-            missingFlowName, InstanceId, harness.RunnerId, leaseUntil, CancellationToken.None));
-        var record = await harness.Store.LoadAsync(missingFlowName, InstanceId, CancellationToken.None);
+            missingFlowName, runId, harness.RunnerId, leaseUntil, CancellationToken.None));
+        var record = await harness.Store.LoadAsync(missingFlowName, runId, CancellationToken.None);
 
         // Act
         var result = await harness.Processor.ProcessAsync(record!, harness.RunnerId, harness.LeaseDuration);
@@ -39,7 +41,7 @@ public sealed class ExecutionProcessorUnitTests
         // Assert
         Assert.Equal(FlowStatus.Failed, result.Status);
         Assert.Contains("not registered", result.Error!.Message, StringComparison.OrdinalIgnoreCase);
-        var status = await harness.Store.LoadAsync(missingFlowName, InstanceId, CancellationToken.None);
+        var status = await harness.Store.LoadAsync(missingFlowName, runId, CancellationToken.None);
         Assert.Equal(ExecutionStatus.Failed, status!.Status);
         Assert.Null(status.LockedBy);
     }
@@ -53,9 +55,11 @@ public sealed class ExecutionProcessorUnitTests
             .Step("only", (_, _) => Task.CompletedTask);
         harness.Register(flow);
 
+        var runId = Guid.NewGuid().ToString("N");
         await harness.Store.CreateAsync(new ExecutionRecord
         {
             FlowName = flow.Name,
+            RunId = runId,
             InstanceId = InstanceId,
             Status = ExecutionStatus.Pending,
             CurrentStep = 0,
@@ -68,15 +72,15 @@ public sealed class ExecutionProcessorUnitTests
 
         var leaseUntil = DateTimeOffset.UtcNow.Add(TestLimits.DefaultLeaseDuration);
         Assert.True(await harness.Store.TryAcquireLeaseAsync(
-            flow.Name, InstanceId, harness.RunnerId, leaseUntil, CancellationToken.None));
-        var record = await harness.Store.LoadAsync(flow.Name, InstanceId, CancellationToken.None);
+            flow.Name, runId, harness.RunnerId, leaseUntil, CancellationToken.None));
+        var record = await harness.Store.LoadAsync(flow.Name, runId, CancellationToken.None);
 
         // Act
         var result = await harness.Processor.ProcessAsync(record!, harness.RunnerId, harness.LeaseDuration);
 
         // Assert
         Assert.Equal(FlowStatus.Failed, result.Status);
-        var status = await harness.Store.LoadAsync(flow.Name, InstanceId, CancellationToken.None);
+        var status = await harness.Store.LoadAsync(flow.Name, runId, CancellationToken.None);
         Assert.Equal(ExecutionStatus.Failed, status!.Status);
         Assert.Contains("deserialize", status.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
         Assert.Null(status.LockedBy);
@@ -110,10 +114,10 @@ public sealed class ExecutionProcessorUnitTests
             .Step("only", (_, _) => Task.CompletedTask);
         await harness.StartAndProcessAsync(flow, InstanceId, new OrderState());
 
-        var record = await harness.Store.LoadAsync(flow.Name, InstanceId, CancellationToken.None);
+        var record = await harness.Store.LoadLatestAsync(flow.Name, InstanceId, CancellationToken.None);
         var leaseUntil = DateTimeOffset.UtcNow.Add(harness.LeaseDuration);
         Assert.True(await harness.Store.TryAcquireLeaseAsync(
-            flow.Name, InstanceId, harness.RunnerId, leaseUntil, CancellationToken.None));
+            flow.Name, record!.RunId, harness.RunnerId, leaseUntil, CancellationToken.None));
 
         // Act
         var second = await harness.Processor.ProcessAsync(record!, harness.RunnerId, harness.LeaseDuration);
