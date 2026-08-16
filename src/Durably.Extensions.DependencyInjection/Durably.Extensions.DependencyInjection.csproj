@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <PackageId>Durably.Extensions.DependencyInjection</PackageId>
-    <Description>Microsoft.Extensions.DependencyInjection wiring for Durably: AddDurably, flow registration, and the IDurablyBuilder used by persistence providers.</Description>
+    <Description>Dependency injection and hosting for Durably. Adds AddDurably, flow registration with AddFlow and AddFlowsFromAssembly, and a hosted worker that claims due executions under a lease.</Description>
+    <PackageTags>$(PackageTags);dependencyinjection;hosting;worker</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

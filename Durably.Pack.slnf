@@ -1,0 +1,15 @@
+{
+  "solution": {
+    "path": "Durably.sln",
+    "projects": [
+      "src\\Durably.Abstractions\\Durably.Abstractions.csproj",
+      "src\\Durably.Core\\Durably.Core.csproj",
+      "src\\Durably.Extensions.DependencyInjection\\Durably.Extensions.DependencyInjection.csproj",
+      "src\\Durably.Persistence.Dapper\\Durably.Persistence.Dapper.csproj",
+      "src\\Durably.Persistence.EntityFrameworkCore\\Durably.Persistence.EntityFrameworkCore.csproj",
+      "src\\Durably.Persistence.InMemory\\Durably.Persistence.InMemory.csproj",
+      "src\\Durably.Traceability\\Durably.Traceability.csproj",
+      "src\\Durably.UI\\Durably.UI.csproj"
+    ]
+  }
+}

@@ -4,7 +4,8 @@
     <TargetFrameworks>net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <PackageId>Durably.Persistence.EntityFrameworkCore</PackageId>
-    <Description>EF Core persistence for Durably: IExecutionStore, ITraceStore, and IExecutionQuery with migrations for SQL Server, PostgreSQL, and SQLite.</Description>
+    <Description>Entity Framework Core persistence for Durably on SQL Server, PostgreSQL, and SQLite. Provides the execution store, the trace store, and the query services used by the worker and the dashboard, with optional schema migration on startup.</Description>
+    <PackageTags>$(PackageTags);efcore;sqlserver;postgresql;sqlite</PackageTags>
     <!-- Older TFM pins (esp. EF7 on net6) pull transitive packages with NuGet audit advisories we cannot patch without abandoning those TFMs. -->
     <NuGetAuditMode>direct</NuGetAuditMode>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903</WarningsNotAsErrors>

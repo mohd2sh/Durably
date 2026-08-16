@@ -15,14 +15,17 @@
     <AnalysisMode>Default</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
-    <Authors>Durably</Authors>
+    <Authors>Mohammad Shakhtour</Authors>
     <Company>Durably</Company>
     <Product>Durably</Product>
+    <Copyright>Copyright (c) 2026 Mohammad Shakhtour</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/durably/durably</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/durably/durably</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/mohd2sh/Durably</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mohd2sh/Durably</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>https://github.com/mohd2sh/Durably/releases</PackageReleaseNotes>
     <PackageTags>durable-execution;workflow;resume;checkpoint;retry;dotnet</PackageTags>
-    <Description>Durable execution for everyday .NET code. Checkpoint your steps; resume after any crash.</Description>
+    <Description>Durable workflows for .NET. Checkpointed steps, crash-safe resume, and optional monitoring in your app.</Description>
   </PropertyGroup>
 
   <!-- Analyzers + warnings-as-errors for src and tests -->
@@ -35,6 +38,32 @@
   <PropertyGroup Condition="$(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)tests'))">
     <NoWarn>$(NoWarn);S2094;CA1707</NoWarn>
   </PropertyGroup>
+
+  <!-- NuGet packaging for publishable src libraries -->
+  <PropertyGroup Condition="$(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)src'))">
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)src')) And '$(IsPackable)' != 'false'">
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)docs\images\icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)src')) And '$(IsPackable)' != 'false' And '$(ManagePackageVersionsCentrally)' != 'false'">
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)src')) And '$(IsPackable)' != 'false' And '$(ManagePackageVersionsCentrally)' == 'false'">
+    <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all" />
+  </ItemGroup>
 
   <ItemGroup Condition="($(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)src')) Or $(MSBuildProjectDirectory.Contains('$(MSBuildThisFileDirectory)tests'))) And '$(ManagePackageVersionsCentrally)' != 'false'">
     <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />

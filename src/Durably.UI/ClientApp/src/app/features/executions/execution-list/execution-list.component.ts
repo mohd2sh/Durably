@@ -8,10 +8,38 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 
+import { DEFAULT_PAGE_SIZE } from '../../../constants/api-routes';
 import { DurablyApiService } from '../../../core/services/durably-api.service';
 import { ExecutionStatus, ExecutionSummary } from '../../../core/models/execution.models';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
+import { ColumnResizeHandleDirective } from '../../../shared/table/column-resize-handle.directive';
+import { loadColumnWidths, saveColumnWidths } from '../../../shared/table/column-widths.storage';
+
+type TableColumn =
+  | 'instanceId'
+  | 'runId'
+  | 'flowName'
+  | 'status'
+  | 'currentStep'
+  | 'attempts'
+  | 'updatedAt'
+  | 'actions';
+
+const COLUMN_WIDTHS_STORAGE_KEY = 'durably.executionList.columnWidths.v1';
+
+const DEFAULT_COLUMN_WIDTHS: Record<TableColumn, number> = {
+  instanceId: 240,
+  runId: 240,
+  flowName: 180,
+  status: 128,
+  currentStep: 180,
+  attempts: 140,
+  updatedAt: 168,
+  actions: 104
+};
 
 @Component({
   selector: 'app-execution-list',
@@ -26,7 +54,10 @@ import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.
     MatSelectModule,
     MatTableModule,
     MatProgressSpinnerModule,
-    StatusBadgeComponent
+    MatTooltipModule,
+    MatPaginatorModule,
+    StatusBadgeComponent,
+    ColumnResizeHandleDirective
   ],
   templateUrl: './execution-list.component.html',
   styleUrl: './execution-list.component.scss'
@@ -35,7 +66,7 @@ export class ExecutionListComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly api = inject(DurablyApiService);
 
-  readonly displayedColumns = [
+  readonly displayedColumns: TableColumn[] = [
     'instanceId',
     'runId',
     'flowName',
@@ -45,6 +76,12 @@ export class ExecutionListComponent implements OnInit {
     'updatedAt',
     'actions'
   ];
+
+  readonly columnWidths = loadColumnWidths(COLUMN_WIDTHS_STORAGE_KEY, DEFAULT_COLUMN_WIDTHS);
+
+  get tableWidth(): number {
+    return this.displayedColumns.reduce((sum, column) => sum + this.columnWidths[column], 0);
+  }
 
   readonly statusOptions = [
     { label: 'Any', value: null },
@@ -62,8 +99,12 @@ export class ExecutionListComponent implements OnInit {
     metadataValue: ['']
   });
 
+  readonly pageSizeOptions = [25, 50, 100];
+
   executions: ExecutionSummary[] = [];
   totalCount = 0;
+  pageIndex = 0;
+  pageSize = DEFAULT_PAGE_SIZE;
   isLoading = false;
   errorMessage = '';
 
@@ -72,6 +113,25 @@ export class ExecutionListComponent implements OnInit {
   }
 
   search(): void {
+    this.pageIndex = 0;
+    this.fetch();
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
+    this.fetch();
+  }
+
+  statusLabel(status: ExecutionStatus): string {
+    return ExecutionStatus[status] ?? 'Unknown';
+  }
+
+  saveColumnWidths(): void {
+    saveColumnWidths(COLUMN_WIDTHS_STORAGE_KEY, this.columnWidths);
+  }
+
+  private fetch(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
@@ -82,7 +142,9 @@ export class ExecutionListComponent implements OnInit {
         instanceId: formValue.instanceId || undefined,
         status: formValue.status ?? undefined,
         metadataKey: formValue.metadataKey || undefined,
-        metadataValue: formValue.metadataValue || undefined
+        metadataValue: formValue.metadataValue || undefined,
+        skip: this.pageIndex * this.pageSize,
+        take: this.pageSize
       })
       .subscribe({
         next: result => {
@@ -95,9 +157,5 @@ export class ExecutionListComponent implements OnInit {
           this.isLoading = false;
         }
       });
-  }
-
-  statusLabel(status: ExecutionStatus): string {
-    return ExecutionStatus[status] ?? 'Unknown';
   }
 }

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -15,20 +15,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Sample.AspNetCore.ServiceDefaults\Sample.AspNetCore.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\src\Durably.Persistence.EntityFrameworkCore\Durably.Persistence.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\Durably.Persistence.InMemory\Durably.Persistence.InMemory.csproj" />
     <ProjectReference Include="..\..\src\Durably.Traceability\Durably.Traceability.csproj" />
     <ProjectReference Include="..\..\src\Durably.UI\Durably.UI.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <DurablyUiWwwRoot
-      Include="..\..\src\Durably.UI\wwwroot\**\*" />
-  </ItemGroup>
-
-  <Target Name="CopyDurablyUiWwwRoot" AfterTargets="Build">
-    <Copy
-      SourceFiles="@(DurablyUiWwwRoot)"
-      DestinationFiles="@(DurablyUiWwwRoot->'$(OutDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
-      SkipUnchangedFiles="true" />
-  </Target>
 
 </Project>

@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <PackageId>Durably.Traceability</PackageId>
-    <Description>Async, non-blocking traceability for Durably: bounded channel sink and a background writer that persists per-step events without blocking checkpoints.</Description>
+    <Description>Step traces for Durably. Records outcome, duration, and optional input and output for every step through a bounded channel and a background writer, so tracing never blocks a checkpoint.</Description>
+    <PackageTags>$(PackageTags);traceability;observability;tracing</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

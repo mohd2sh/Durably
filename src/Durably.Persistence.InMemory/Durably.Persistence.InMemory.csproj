@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <PackageId>Durably.Persistence.InMemory</PackageId>
-    <Description>In-process IExecutionStore, IExecutionQuery, and ITraceStore for Durably tests, demos, and local development. Opt in with UseInMemoryStore().</Description>
+    <Description>In memory Durably store for tests, samples, and local development. Enable it with UseInMemoryStore. State lives in the process, so use a database store in production.</Description>
+    <PackageTags>$(PackageTags);inmemory;testing</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

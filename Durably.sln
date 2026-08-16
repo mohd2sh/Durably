@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.8.12023.21 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5489E89F-64D4-49BF-A418-9BF259843893}"
 EndProject
@@ -51,13 +51,20 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Durably.Traceability.UnitTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Durably.Traceability.IntegrationTests", "tests\Durably.Traceability.IntegrationTests\Durably.Traceability.IntegrationTests.csproj", "{287F05B8-73DF-4E60-9DD2-9AE365D51D75}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{A1B2C3D4-E5F6-4789-A012-3456789ABCDE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{B2C3D4E5-F6A7-4890-B123-456789ABCDEF}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ci-e2e.yml = .github\workflows\ci-e2e.yml
+		.github\workflows\ci-integration.yml = .github\workflows\ci-integration.yml
+		.github\workflows\ci-unit.yml = .github\workflows\ci-unit.yml
+		.github\workflows\nuget-publish.yml = .github\workflows\nuget-publish.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{AC1E2EC3-C059-4940-9033-1D8BA1BCF714}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -145,6 +152,9 @@ Global
 		{287F05B8-73DF-4E60-9DD2-9AE365D51D75}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{287F05B8-73DF-4E60-9DD2-9AE365D51D75}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AC1E2EC3-C059-4940-9033-1D8BA1BCF714} = {5489E89F-64D4-49BF-A418-9BF259843893}
 		{3D57A390-9AC6-4A28-8E42-9EF3B74472A7} = {5489E89F-64D4-49BF-A418-9BF259843893}
@@ -167,5 +177,6 @@ Global
 		{55C87514-5B21-433E-BBD5-60567673FD34} = {5489E89F-64D4-49BF-A418-9BF259843893}
 		{1CA255CA-7A3A-4126-A01C-1B2251C9EEF2} = {E9A3DC37-2065-4A8F-A060-639BF42D3CE8}
 		{287F05B8-73DF-4E60-9DD2-9AE365D51D75} = {E9A3DC37-2065-4A8F-A060-639BF42D3CE8}
+		{B2C3D4E5-F6A7-4890-B123-456789ABCDEF} = {A1B2C3D4-E5F6-4789-A012-3456789ABCDE}
 	EndGlobalSection
 EndGlobal

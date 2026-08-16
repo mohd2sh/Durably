@@ -1,36 +1,46 @@
 # Sample.Worker
 
-.NET 8 Worker Service sample showing durable execution in a background polling loop.
+.NET 10 Generic Host sample showing **fluent** Durably registration (`Flow.For` + `AddFlow`) with `IStep` classes. Requires the .NET 10 SDK.
 
-This sample uses PostgreSQL with a plain connection string from `appsettings.json`:
+For a pure fluent + **lambda** (no `IStep`) example in the API, see [`../Sample.AspNetCore.Api/Workflows/Fluent`](../Sample.AspNetCore.Api/Workflows/Fluent). OOP `IFlow` demos live under [`../Sample.AspNetCore.Api/Workflows/Oop`](../Sample.AspNetCore.Api/Workflows/Oop).
 
-```csharp
-.UsePostgres(connectionString, o => o.AutoMigrate = true)
-```
+## What it demonstrates
 
-No `NpgsqlConnection` is created in the sample app.
+- Fluent flow definition with per-step retry
+- Library-hosted `DurablyWorkerService` claims Pending work with leases
+- Optional demo enqueue loop (`OrderFinalizeWorker`) when you configure order ids
+- `IStepContext.IdempotencyKey` on the email step
 
-## Prerequisites
+## Persistence
 
-- PostgreSQL running locally, or update `ConnectionStrings:Durable` in `appsettings.json`.
+| How you run | Store |
+|-------------|--------|
+| `dotnet run --project samples/Sample.AspNetCore.AppHost` | EF PostgreSQL **container** — AppHost sets `Durably__Store=Postgres` and injects `ConnectionStrings:worker` |
+| `dotnet run --project samples/Sample.Worker` | **InMemory** from `appsettings.json` (`Durably:Store=InMemory`) |
+
+Optional without Aspire: set `Durably:Store=Postgres` and `ConnectionStrings:Durable` (or `worker`).
 
 ## Run
 
 ```bash
+# Recommended: with API + Postgres via Aspire
+dotnet run --project samples/Sample.AspNetCore.AppHost
+
+# Zero deps
 dotnet run --project samples/Sample.Worker
 ```
 
-Watch the console. The worker polls every 5 seconds and processes `order-1` and `order-2` from config.
+## No auto-enqueue by default
 
-## Expected behavior
+`Worker:PendingOrderIds` is omitted/empty, so `OrderFinalizeWorker` is **not** registered. Nothing is started until you add ids (or enqueue from your own code).
 
-- `order-1` completes on the first cycle.
-- `order-2` fails once at send-email (simulated SMTP failure), then completes on the next poll cycle without re-running generate-report.
+To opt into the demo loop, set in `appsettings.json`:
 
-Stop with Ctrl+C.
+```json
+"Worker": {
+  "PollIntervalSeconds": 5,
+  "PendingOrderIds": [ "order-1", "order-2" ]
+}
+```
 
-## What this demonstrates
-
-- Generic Host + `AddDurably()` + PostgreSQL + traceability
-- Caller re-invokes `ExecuteAsync` on each poll; the engine resumes from the last checkpoint
-- Background jobs do not need HTTP — the same durable flow API applies
+Then the background service periodically calls `StartAsync` for those ids.

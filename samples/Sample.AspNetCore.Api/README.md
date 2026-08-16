@@ -1,107 +1,122 @@
 # Sample.AspNetCore.Api
 
-.NET 8 Web API sample showing Durably with DI, SQL Server persistence, traceability, OOP flows/steps, hooks, branching, and the embeddable Durably UI.
+.NET 10 Web API showcase: business workflows organized by **authoring design**, Durably UI, Traceability, and store selection (Aspire Postgres or InMemory). Requires the .NET 10 SDK.
 
-## Prerequisites
+## Explore by design
 
-- **Aspire (recommended):** [Docker Desktop](https://www.docker.com/products/docker-desktop/) for the SQL Server container
-- **Standalone:** SQL Server LocalDB (Windows) or update `ConnectionStrings:Durable` in `appsettings.Development.json`
+```
+Workflows/
+  Oop/       ← IFlow + IStep  (AddFlowsFromAssembly)
+  Fluent/    ← Flow.For + lambdas (AddFlow)
+Controllers/
+  Oop/
+  Fluent/
+```
+
+| Style | Folder | Registration | Controllers |
+|-------|--------|--------------|-------------|
+| OOP | `Workflows/Oop/` | `AddFlowsFromAssembly` | `Controllers/Oop/` |
+| Fluent / lambda | `Workflows/Fluent/` | `AddFlow` | `Controllers/Fluent/` |
+
+Shared fakes live in `Services/` (not under a style folder).
+
+## Persistence
+
+| How you run | Store |
+|-------------|--------|
+| `dotnet run --project samples/Sample.AspNetCore.AppHost` | EF PostgreSQL **container** — AppHost sets `Durably__Store=Postgres` and injects `ConnectionStrings:durable` |
+| `dotnet run --project samples/Sample.AspNetCore.Api` | **InMemory** from `appsettings.json` (`Durably:Store=InMemory`) |
+
+Optional without Aspire: set `Durably:Store=Postgres` (or `SqlServer`) and `ConnectionStrings:Durable` (env or config).
+
+The API does **not** import or seed sample runs. The Durably UI and hosted worker only process instances you start (Swagger, curl, or your own clients). If old executions keep showing under AppHost, they are leftover rows in the Aspire Postgres volume `durably-pg-data` — remove that Docker volume (or reset the database) to clear them. An unused leftover SQL volume `durably-sql-data` from older AppHost runs can be deleted too.
 
 ## Run
 
-| Command | Database |
-|---------|----------|
-| `dotnet run --project samples/Sample.AspNetCore.AppHost` | SQL Server **container** (Aspire dashboard opens automatically) |
-| `dotnet run --project samples/Sample.AspNetCore.Api` | **LocalDB** fallback (no Docker required) |
-
-When launched via AppHost, Aspire injects `ConnectionStrings:durable` into the API. When run standalone, the API uses `ConnectionStrings:Durable` from config, then falls back to LocalDB.
-
-### Aspire AppHost
-
 ```bash
+# Docker Desktop required — api waits for the Postgres durable DB (WaitFor)
 dotnet run --project samples/Sample.AspNetCore.AppHost
-```
-
-Open the Aspire dashboard URL shown in the console, then the API Swagger at the `api` resource endpoint.
-
-### Standalone API
-
-```bash
+# or
 dotnet run --project samples/Sample.AspNetCore.Api
 ```
 
-Open Swagger at `https://localhost:7xxx/swagger` (port shown in console).
+- Swagger: Development UI from the API launch URL (AppHost forces `ASPNETCORE_ENVIRONMENT=Development`)  
+- Durably UI: `/durable` on the API  
+- Aspire dashboard: confirm `postgres` / `durable` then `api` are **Running**. If `api` stays **Waiting**, the database is not healthy yet; if **Failed**, open the resource **Console**.
+- **Running ≠ reachable.** Open the **api Console** and confirm `API Program starting` / `API listening`. Under AppHost, HTTP/HTTPS ports are **allocated by Aspire each run** (launch profile ports are ignored) — always use the **current** dashboard URL, not a bookmark to `58329`/`58330`.
+- Before a fresh AppHost session after failed debug runs: stop debugging, then kill leftover `Sample.AspNetCore.Api` / `Sample.Worker` processes so they cannot steal ports or confuse the debugger.
+- Breakpoints in this project's `Program.cs`: debug the **AppHost** so the IDE attaches to the child `api` process, or attach to the live `Sample.AspNetCore.Api` PID. Plain `dotnet run` on AppHost alone will not hit those breakpoints.
 
-## Durably UI
+## Oop workflows
 
-Open `/durable` for execution search, step graph, and trace detail. No login required. Durably UI routes are excluded from Swagger.
+| Route prefix | Folder | Highlights |
+|--------------|--------|------------|
+| `/api/order-finalize` | `Workflows/Oop/OrderFinalize` | Resume, Fixed retry, DI hooks, idempotency key, `FlowStartResult` |
+| `/api/order-fulfillment` | `Workflows/Oop/OrderFulfillment` | `StepIf`, multi-step `Choose` arm, builder hooks |
+| `/api/payment-capture` | `Workflows/Oop/PaymentCapture` | `RetryOn` / `DoNotRetryOn`, step `Timeout`, `Attempt` |
+| `/api/subscription-renewal` | `Workflows/Oop/SubscriptionRenewal` | Lambda + `IStep` mix inside `IFlow`, `OpenConflictPolicy.Skip` |
+| `/api/notification-dispatch` | `Workflows/Oop/NotificationDispatch` | Nested `Choose`, metadata, `ITraceRedactor` |
 
-## What this demonstrates
+## Fluent / lambda workflows
 
-- `AddDurably()` + `UseSqlServer(..., AutoMigrate = true)` + `AddTraceability()` + `AddFlowsFromAssembly()`
-- Thin composition root: `Program.cs` calls `AddSampleApplication()` (handlers/services live in their own files)
-- `StartAsync` enqueues (`Pending`); background worker processes; `GetStatusAsync` for polling
-- Global retry defaults and per-step `.Retry(...)` on finalize email
-- **DI hooks:** `IFlowSuccessHandler` / `IFlowFailureHandler` on `OrderFinalizeFlow`
-- **Builder hooks:** `.OnSuccess` / `.OnFailure` on `OrderFulfillmentFlow`
-- **Branching:** `StepIf` (fraud check when `Total >= 500`) and `Choose`/`When`/`Otherwise` by `Channel`
+| Route prefix | Folder | Highlights |
+|--------------|--------|------------|
+| `/api/invoice-reminder` | `Workflows/Fluent/InvoiceReminder` | Pure `Flow.For` + lambdas; `StepIf` + `Choose`; no `IFlow` / `IStep` |
 
-## Try it
+Compared to [Sample.Worker](../Sample.Worker/): Worker is fluent + `IStep` classes; this API fluent sample is fluent + **lambda** steps only.
 
-### Finalize (linear flow + DI handlers)
+Hosting knobs in `Program.cs`: `ConfigureWorker`, `AddTraceability`, `AddDurablyUI`.
 
-1. **Happy path** — `POST /api/orders/order-1/finalize`:
+## Quick curls
 
-```json
-{
-  "customerEmail": "user@example.com",
-  "total": 99.99
-}
+Replace `BASE` with the API URL (e.g. `https://localhost:7xxx`).
+
+### Fluent — invoice reminder
+
+```bash
+curl -X POST "$BASE/api/invoice-reminder/inv-1" -H "Content-Type: application/json" \
+  -d '{"customerEmail":"billing@example.com","daysOverdue":45,"channel":"sms","amountDue":250}'
+curl "$BASE/api/invoice-reminder/inv-1/status"
 ```
 
-Returns **202 Accepted**. Poll `GET /api/orders/order-1/status`. Watch logs for `OrderFinalizeSuccessHandler`.
+### Oop — order finalize + resume
 
-2. **Failure** — trigger a fail-once email, then finalize:
-
-```text
-POST /api/orders/order-2/simulate-email-failure
-POST /api/orders/order-2/finalize
+```bash
+curl -X POST "$BASE/api/order-finalize/ord-1/simulate-email-failure"
+curl -X POST "$BASE/api/order-finalize/ord-1" -H "Content-Type: application/json" \
+  -d '{"customerEmail":"a@example.com","total":42,"channel":"standard"}'
+curl "$BASE/api/order-finalize/ord-1/status"
 ```
 
-Poll status until `Failed`. Logs show `OrderFinalizeFailureHandler`. (Failed is terminal for the worker; re-queue is out of scope for this sample.)
+### Oop — fulfillment (express + fraud gate)
 
-### Fulfill (StepIf + Choose + builder hooks)
-
-`POST /api/orders/{id}/fulfill` — returns **202**. Poll `GET /api/orders/{id}/fulfill/status`.
-
-**High-value express** (runs fraud check + express branch):
-
-```json
-{
-  "customerEmail": "user@example.com",
-  "total": 750,
-  "channel": "express"
-}
+```bash
+curl -X POST "$BASE/api/order-fulfillment/ord-2" -H "Content-Type: application/json" \
+  -d '{"customerEmail":"b@example.com","total":750,"channel":"express"}'
 ```
 
-**Low-value standard** (skips fraud check, standard branch):
+### Oop — payment (transient retry vs permanent fail)
 
-```json
-{
-  "customerEmail": "user@example.com",
-  "total": 49.99,
-  "channel": "standard"
-}
+```bash
+curl -X POST "$BASE/api/payment-capture/pay-1/simulate-transient"
+curl -X POST "$BASE/api/payment-capture/pay-1" -H "Content-Type: application/json" -d '{"amount":19.99}'
 ```
 
-**Digital / other channel** (`Otherwise` branch):
+### Oop — subscription (idempotent open conflict)
 
-```json
-{
-  "customerEmail": "user@example.com",
-  "total": 19.99,
-  "channel": "digital"
-}
+```bash
+curl -X POST "$BASE/api/subscription-renewal/sub-1" -H "Content-Type: application/json" \
+  -d '{"customerEmail":"sub@example.com"}'
+# second POST while open → outcome Skipped
+curl -X POST "$BASE/api/subscription-renewal/sub-1" -H "Content-Type: application/json" \
+  -d '{"customerEmail":"sub@example.com"}'
 ```
 
-`Channel` values: `express`, `standard`, or anything else (treated as digital via `Otherwise`).
+### Oop — notification (nested branches)
+
+```bash
+curl -X POST "$BASE/api/notification-dispatch/n-1" -H "Content-Type: application/json" \
+  -d '{"priority":"urgent","channel":"sms","recipient":"+15551212","message":"Ship now"}'
+```
+
+All start endpoints return `outcome` (`Created` / `Conflict` / `Skipped`), `runId`, and `status`.

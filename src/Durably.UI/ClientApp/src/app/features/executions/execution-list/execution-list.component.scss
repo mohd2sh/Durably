@@ -34,25 +34,32 @@
   color: var(--danger);
 }
 
-.table-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.summary {
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
 .table-shell {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .execution-table {
-  width: 100%;
   background: transparent;
+  table-layout: fixed;
+}
+
+.execution-table .mat-mdc-header-cell {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.col-resizable {
+  position: relative;
+  padding-right: 0.85rem;
+}
+
+.cell-truncate {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mono {
