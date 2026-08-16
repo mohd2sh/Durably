@@ -3,19 +3,24 @@ using Sample.AspNetCore.Api.Registration;
 using Sample.AspNetCore.Api.Traceability;
 using Sample.AspNetCore.Api.Workflows.Fluent.InvoiceReminder;
 
+Console.WriteLine("API Program starting");
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-var sqlConnection =
+var connectionString =
     builder.Configuration.GetConnectionString("durable")
     ?? builder.Configuration.GetConnectionString("Durable");
 
 var store = builder.Configuration["Durably:Store"];
 if (string.IsNullOrWhiteSpace(store))
 {
-    store = string.IsNullOrWhiteSpace(sqlConnection) ? "InMemory" : "SqlServer";
+    store = string.IsNullOrWhiteSpace(connectionString) ? "InMemory" : "Postgres";
 }
+
+Console.WriteLine(
+    $"API store={store}; durableConnection={(string.IsNullOrWhiteSpace(connectionString) ? "missing" : "present")}");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -40,22 +45,31 @@ var durably = builder.Services
         o.MaxDegreeOfParallelism = 4;
     });
 
-if (string.Equals(store, "SqlServer", StringComparison.OrdinalIgnoreCase))
+if (string.Equals(store, "Postgres", StringComparison.OrdinalIgnoreCase))
 {
-    if (string.IsNullOrWhiteSpace(sqlConnection))
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException(
+            "Durably:Store=Postgres requires ConnectionStrings:durable (Aspire) or ConnectionStrings:Durable.");
+    }
+
+    durably.UsePostgres(connectionString, o => o.AutoMigrate = true);
+}
+else if (string.Equals(store, "SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
     {
         throw new InvalidOperationException(
             "Durably:Store=SqlServer requires ConnectionStrings:durable (Aspire) or ConnectionStrings:Durable.");
     }
 
-    durably.UseSqlServer(sqlConnection, o => o.AutoMigrate = true);
+    durably.UseSqlServer(connectionString, o => o.AutoMigrate = true);
 }
 else
 {
     durably.UseInMemoryStore();
 }
 
-// Fluent/lambda sample (Workflows/Fluent) — registered explicitly via AddFlow.
 var invoiceReminder = InvoiceReminderFlowDefinition.Build();
 builder.Services.AddSingleton(invoiceReminder);
 
@@ -66,7 +80,7 @@ durably
         t.CaptureExceptions = true;
         t.FlushInterval = TimeSpan.FromSeconds(1);
     })
-    .AddFlowsFromAssembly(typeof(Program).Assembly) // OOP samples under Workflows/Oop
+    .AddFlowsFromAssembly(typeof(Program).Assembly)
     .AddFlow(invoiceReminder);
 
 builder.Services.AddDurablyUI();
@@ -85,4 +99,5 @@ app.MapDurablyUI("/durable");
 app.MapControllers();
 app.MapDefaultEndpoints();
 
+Console.WriteLine("API listening");
 app.Run();

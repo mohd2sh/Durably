@@ -1,0 +1,210 @@
+name: NuGet Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Optional Version override (for example 0.1.0). Leave empty to use MinVer from the git tag.
+        required: false
+        type: string
+      dry-run:
+        description: Pack and upload artifacts without publishing to nuget.org
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: nuget-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  pack:
+    name: Pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is-prerelease: ${{ steps.version.outputs.is-prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            6.0.x
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: src/Durably.UI/ClientApp/package-lock.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Install ClientApp dependencies
+        working-directory: src/Durably.UI/ClientApp
+        run: npm ci
+
+      - name: Restore
+        run: dotnet restore Durably.Pack.slnf
+
+      - name: Build
+        run: |
+          VERSION_ARGS=""
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION_ARGS="-p:MinVerVersionOverride=${{ inputs.version }}"
+          fi
+          dotnet build Durably.Pack.slnf -c Release --no-restore \
+            -p:ContinuousIntegrationBuild=true \
+            $VERSION_ARGS
+
+      - name: Test
+        run: |
+          dotnet test tests/Durably.Core.UnitTests/Durably.Core.UnitTests.csproj \
+            -c Release --verbosity normal \
+            --logger "trx;LogFileName=core-unit.trx" \
+            --results-directory TestResults
+          dotnet test tests/Durably.Extensions.DependencyInjection.UnitTests/Durably.Extensions.DependencyInjection.UnitTests.csproj \
+            -c Release --verbosity normal \
+            --logger "trx;LogFileName=di-unit.trx" \
+            --results-directory TestResults
+          dotnet test tests/Durably.Persistence.EntityFrameworkCore.UnitTests/Durably.Persistence.EntityFrameworkCore.UnitTests.csproj \
+            -c Release --verbosity normal \
+            --logger "trx;LogFileName=ef-unit.trx" \
+            --results-directory TestResults
+          dotnet test tests/Durably.Traceability.UnitTests/Durably.Traceability.UnitTests.csproj \
+            -c Release --verbosity normal \
+            --logger "trx;LogFileName=traceability-unit.trx" \
+            --results-directory TestResults
+
+      - name: Pack
+        run: |
+          VERSION_ARGS=""
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION_ARGS="-p:MinVerVersionOverride=${{ inputs.version }}"
+          fi
+          dotnet pack Durably.Pack.slnf -c Release --no-build \
+            -o artifacts \
+            -p:ContinuousIntegrationBuild=true \
+            $VERSION_ARGS
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          nupkg=$(ls artifacts/Durably.Core.*.nupkg | grep -v '\.snupkg$' | head -n 1)
+          name=$(basename "$nupkg" .nupkg)
+          version=${name#Durably.Core.}
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then
+            echo "is-prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Resolved package version: $version"
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Pack summary
+        shell: bash
+        run: |
+          {
+            echo "## Pack"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Version | \`${{ steps.version.outputs.version }}\` |"
+            echo "| Prerelease | ${{ steps.version.outputs.is-prerelease }} |"
+            echo "| Dry run | ${{ inputs.dry-run || false }} |"
+            echo ""
+            echo "### Packages"
+            echo ""
+            for f in artifacts/*.nupkg; do
+              echo "- \`$(basename "$f")\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    name: Publish
+    needs: pack
+    if: startsWith(github.ref, 'refs/tags/v') && inputs.dry-run != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: nuget-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: NuGet login (OIDC)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push packages
+        run: |
+          dotnet nuget push "artifacts/*.nupkg" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+            --skip-duplicate
+
+      - name: Publish summary
+        shell: bash
+        run: |
+          {
+            echo "## Publish"
+            echo ""
+            echo "Published version \`${{ needs.pack.outputs.version }}\` to nuget.org."
+            echo ""
+            echo "### Packages"
+            echo ""
+            for f in artifacts/*.nupkg; do
+              echo "- \`$(basename "$f")\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

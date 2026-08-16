@@ -2,10 +2,6 @@ using Sample.Worker.Models;
 
 namespace Sample.Worker.Workers;
 
-/// <summary>
-/// Periodically enqueues sample orders via <see cref="IFlowEngine.StartAsync"/>.
-/// The library-hosted <c>DurablyWorkerService</c> claims and processes Pending work.
-/// </summary>
 public sealed class OrderFinalizeWorker : BackgroundService
 {
     private readonly IFlowEngine _engine;

@@ -16,7 +16,6 @@ if (string.IsNullOrWhiteSpace(store))
     store = string.IsNullOrWhiteSpace(postgresConnection) ? "InMemory" : "Postgres";
 }
 
-// Fluent registration contrast to the API sample's IFlow + AddFlowsFromAssembly style.
 var orderFinalizeFlow = Flow.For<OrderFinalizeState>()
     .Step<GenerateReportStep>()
     .Step<SendEmailStep>(configure: o => o.Retry(RetryPolicy.Fixed(3, TimeSpan.FromSeconds(1))))
@@ -65,7 +64,11 @@ durably
         t.FlushInterval = TimeSpan.FromSeconds(1);
     });
 
-builder.Services.AddHostedService<OrderFinalizeWorker>();
+var pendingOrderIds = builder.Configuration.GetSection("Worker:PendingOrderIds").Get<string[]>();
+if (pendingOrderIds is { Length: > 0 })
+{
+    builder.Services.AddHostedService<OrderFinalizeWorker>();
+}
 
 var host = builder.Build();
 host.Services.GetRequiredService<ILoggerFactory>()

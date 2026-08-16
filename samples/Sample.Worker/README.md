@@ -7,32 +7,40 @@ For a pure fluent + **lambda** (no `IStep`) example in the API, see [`../Sample.
 ## What it demonstrates
 
 - Fluent flow definition with per-step retry
-- Enqueue via `IFlowEngine.StartAsync` from a background service
 - Library-hosted `DurablyWorkerService` claims Pending work with leases
-- Resume after a simulated one-shot email failure on `order-2`
+- Optional demo enqueue loop (`OrderFinalizeWorker`) when you configure order ids
 - `IStepContext.IdempotencyKey` on the email step
 
 ## Persistence
 
 | How you run | Store |
 |-------------|--------|
-| `dotnet run --project samples/Sample.AspNetCore.AppHost` | EF PostgreSQL **container** (Aspire injects `ConnectionStrings:worker`) |
-| `dotnet run --project samples/Sample.Worker` | **InMemory** by default (`Durably:Store=InMemory`) |
+| `dotnet run --project samples/Sample.AspNetCore.AppHost` | EF PostgreSQL **container** — AppHost sets `Durably__Store=Postgres` and injects `ConnectionStrings:worker` |
+| `dotnet run --project samples/Sample.Worker` | **InMemory** from `appsettings.json` (`Durably:Store=InMemory`) |
 
-Optional: set `Durably:Store=Postgres` and `ConnectionStrings:Durable` (or `worker`) to point at your own Postgres.
+Optional without Aspire: set `Durably:Store=Postgres` and `ConnectionStrings:Durable` (or `worker`).
 
 ## Run
 
 ```bash
-# Recommended: with API + SQL Server + Postgres via Aspire
+# Recommended: with API + Postgres via Aspire
 dotnet run --project samples/Sample.AspNetCore.AppHost
 
 # Zero deps
 dotnet run --project samples/Sample.Worker
 ```
 
-## Behaviour
+## No auto-enqueue by default
 
-1. Every few seconds the sample enqueues `order-1` and `order-2` (idempotent while a run is open).
-2. `order-1` completes: generate-report → send-email → finalize.
-3. `order-2` fails once at send-email, then resumes on the next worker claim; generate-report is not re-executed.
+`Worker:PendingOrderIds` is omitted/empty, so `OrderFinalizeWorker` is **not** registered. Nothing is started until you add ids (or enqueue from your own code).
+
+To opt into the demo loop, set in `appsettings.json`:
+
+```json
+"Worker": {
+  "PollIntervalSeconds": 5,
+  "PendingOrderIds": [ "order-1", "order-2" ]
+}
+```
+
+Then the background service periodically calls `StartAsync` for those ids.

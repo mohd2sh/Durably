@@ -4,12 +4,10 @@ namespace Sample.Worker.Services;
 
 public sealed class EmailService : IEmailService
 {
-    private static readonly ConcurrentDictionary<string, byte> FailOnce = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["order-2"] = 0
-    };
-
+    private static readonly ConcurrentDictionary<string, byte> FailOnce = new(StringComparer.OrdinalIgnoreCase);
     private static readonly ConcurrentDictionary<string, byte> SentKeys = new(StringComparer.Ordinal);
+
+    public static void SimulateFailureFor(string orderId) => FailOnce[orderId] = 0;
 
     public Task SendAsync(string orderId, string idempotencyKey, CancellationToken cancellationToken)
     {

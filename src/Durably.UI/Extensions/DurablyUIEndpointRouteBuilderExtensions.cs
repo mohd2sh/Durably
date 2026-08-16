@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
 namespace Durably;
@@ -51,16 +50,11 @@ public static class DurablyUIEndpointRouteBuilderExtensions
         string prefix,
         string apiPath)
     {
-        var webRoot = WwwRootPathResolver.Resolve();
-        if (!Directory.Exists(webRoot))
+        if (!UiAssetProvider.HasAssets)
         {
             return Array.Empty<IEndpointConventionBuilder>();
         }
 
-        // PhysicalFileProvider is retained for the lifetime of the mapped SPA endpoints (app lifetime).
-#pragma warning disable CA2000 // Dispose objects before losing scope
-        var fileProvider = new PhysicalFileProvider(webRoot);
-#pragma warning restore CA2000
         var builders = new List<IEndpointConventionBuilder>(2);
 
         builders.Add(
@@ -82,29 +76,28 @@ public static class DurablyUIEndpointRouteBuilderExtensions
                     relativePath = "index.html";
                 }
 
-                var fileInfo = fileProvider.GetFileInfo(relativePath);
-                if (!fileInfo.Exists)
+                if (!UiAssetProvider.TryOpen(relativePath, out var asset))
                 {
-                    fileInfo = fileProvider.GetFileInfo("index.html");
                     relativePath = "index.html";
+                    if (!UiAssetProvider.TryOpen(relativePath, out asset))
+                    {
+                        context.Response.StatusCode = StatusCodes.Status404NotFound;
+                        return;
+                    }
                 }
 
-                if (!fileInfo.Exists)
+                await using (asset.ConfigureAwait(false))
                 {
-                    context.Response.StatusCode = StatusCodes.Status404NotFound;
-                    return;
+                    context.Response.ContentType = ResolveContentType(relativePath);
+
+                    if (IsHtmlShell(relativePath))
+                    {
+                        await WriteRewrittenHtmlAsync(context, asset, prefix, apiPath).ConfigureAwait(false);
+                        return;
+                    }
+
+                    await asset.CopyToAsync(context.Response.Body).ConfigureAwait(false);
                 }
-
-                context.Response.ContentType = ResolveContentType(relativePath);
-
-                if (IsHtmlShell(relativePath))
-                {
-                    await WriteRewrittenHtmlAsync(context, fileInfo.PhysicalPath!, prefix, apiPath)
-                        .ConfigureAwait(false);
-                    return;
-                }
-
-                await context.Response.SendFileAsync(fileInfo.PhysicalPath!).ConfigureAwait(false);
             })
             .ExcludeFromApiDescription());
 
@@ -116,11 +109,12 @@ public static class DurablyUIEndpointRouteBuilderExtensions
 
     private static async Task WriteRewrittenHtmlAsync(
         HttpContext context,
-        string physicalPath,
+        Stream asset,
         string prefix,
         string apiPath)
     {
-        var html = await File.ReadAllTextAsync(physicalPath).ConfigureAwait(false);
+        using var reader = new StreamReader(asset);
+        var html = await reader.ReadToEndAsync().ConfigureAwait(false);
         html = html
             .Replace(BasePlaceholder, prefix, StringComparison.Ordinal)
             .Replace(ApiPlaceholder, apiPath, StringComparison.Ordinal);

@@ -1,6 +1,6 @@
 # Sample.AspNetCore.Api
 
-.NET 10 Web API showcase: business workflows organized by **authoring design**, Durably UI, Traceability, and store selection (Aspire SQL Server or InMemory). Requires the .NET 10 SDK.
+.NET 10 Web API showcase: business workflows organized by **authoring design**, Durably UI, Traceability, and store selection (Aspire Postgres or InMemory). Requires the .NET 10 SDK.
 
 ## Explore by design
 
@@ -24,21 +24,28 @@ Shared fakes live in `Services/` (not under a style folder).
 
 | How you run | Store |
 |-------------|--------|
-| `dotnet run --project samples/Sample.AspNetCore.AppHost` | EF SQL Server **container** (Aspire injects `ConnectionStrings:durable`) |
-| `dotnet run --project samples/Sample.AspNetCore.Api` | **InMemory** by default (`Durably:Store=InMemory`) |
+| `dotnet run --project samples/Sample.AspNetCore.AppHost` | EF PostgreSQL **container** — AppHost sets `Durably__Store=Postgres` and injects `ConnectionStrings:durable` |
+| `dotnet run --project samples/Sample.AspNetCore.Api` | **InMemory** from `appsettings.json` (`Durably:Store=InMemory`) |
 
-Optional SQL without Aspire: set `Durably:Store=SqlServer` and `ConnectionStrings:Durable`.
+Optional without Aspire: set `Durably:Store=Postgres` (or `SqlServer`) and `ConnectionStrings:Durable` (env or config).
+
+The API does **not** import or seed sample runs. The Durably UI and hosted worker only process instances you start (Swagger, curl, or your own clients). If old executions keep showing under AppHost, they are leftover rows in the Aspire Postgres volume `durably-pg-data` — remove that Docker volume (or reset the database) to clear them. An unused leftover SQL volume `durably-sql-data` from older AppHost runs can be deleted too.
 
 ## Run
 
 ```bash
+# Docker Desktop required — api waits for the Postgres durable DB (WaitFor)
 dotnet run --project samples/Sample.AspNetCore.AppHost
 # or
 dotnet run --project samples/Sample.AspNetCore.Api
 ```
 
-- Swagger: Development UI from the API launch URL  
-- Durably dashboard: `/durable`
+- Swagger: Development UI from the API launch URL (AppHost forces `ASPNETCORE_ENVIRONMENT=Development`)  
+- Durably UI: `/durable` on the API  
+- Aspire dashboard: confirm `postgres` / `durable` then `api` are **Running**. If `api` stays **Waiting**, the database is not healthy yet; if **Failed**, open the resource **Console**.
+- **Running ≠ reachable.** Open the **api Console** and confirm `API Program starting` / `API listening`. Under AppHost, HTTP/HTTPS ports are **allocated by Aspire each run** (launch profile ports are ignored) — always use the **current** dashboard URL, not a bookmark to `58329`/`58330`.
+- Before a fresh AppHost session after failed debug runs: stop debugging, then kill leftover `Sample.AspNetCore.Api` / `Sample.Worker` processes so they cannot steal ports or confuse the debugger.
+- Breakpoints in this project's `Program.cs`: debug the **AppHost** so the IDE attaches to the child `api` process, or attach to the live `Sample.AspNetCore.Api` PID. Plain `dotnet run` on AppHost alone will not hit those breakpoints.
 
 ## Oop workflows
 

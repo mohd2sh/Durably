@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <PackageId>Durably.Persistence.Dapper</PackageId>
-    <Description>Driver-agnostic Dapper/raw-SQL IExecutionStore for Durably, with SQL Server, PostgreSQL, and SQLite dialects and idempotent schema bootstrap. EF-free; runs on .NET Framework 4.6.1+ through modern .NET.</Description>
+    <Description>Dapper persistence for Durably on SQL Server, PostgreSQL, and SQLite. Runs plain SQL against a connection you supply and keeps Entity Framework Core out of the dependency graph.</Description>
+    <PackageTags>$(PackageTags);dapper;sqlserver;postgresql;sqlite</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

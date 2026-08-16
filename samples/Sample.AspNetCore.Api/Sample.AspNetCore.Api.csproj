@@ -20,16 +20,4 @@
     <ProjectReference Include="..\..\src\Durably.UI\Durably.UI.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <DurablyUiWwwRoot
-      Include="..\..\src\Durably.UI\wwwroot\**\*" />
-  </ItemGroup>
-
-  <Target Name="CopyDurablyUiWwwRoot" AfterTargets="Build">
-    <Copy
-      SourceFiles="@(DurablyUiWwwRoot)"
-      DestinationFiles="@(DurablyUiWwwRoot->'$(OutDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
-      SkipUnchangedFiles="true" />
-  </Target>
-
 </Project>

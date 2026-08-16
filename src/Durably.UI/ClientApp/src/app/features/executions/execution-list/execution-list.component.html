@@ -53,29 +53,75 @@
   } @else if (errorMessage) {
     <p class="error">{{ errorMessage }}</p>
   } @else {
-    <div class="table-meta">
-      <span class="summary">{{ totalCount }} execution(s)</span>
-    </div>
-
     <div class="table-shell panel">
-      <table mat-table [dataSource]="executions" class="execution-table">
+      <table
+        mat-table
+        [dataSource]="executions"
+        class="execution-table"
+        [style.width.px]="tableWidth"
+      >
+        <colgroup>
+          <col [style.width.px]="columnWidths.instanceId" />
+          <col [style.width.px]="columnWidths.runId" />
+          <col [style.width.px]="columnWidths.flowName" />
+          <col [style.width.px]="columnWidths.status" />
+          <col [style.width.px]="columnWidths.currentStep" />
+          <col [style.width.px]="columnWidths.attempts" />
+          <col [style.width.px]="columnWidths.updatedAt" />
+          <col [style.width.px]="columnWidths.actions" />
+        </colgroup>
+
         <ng-container matColumnDef="instanceId">
-          <th mat-header-cell *matHeaderCellDef>Instance</th>
-          <td mat-cell *matCellDef="let row" class="mono">{{ row.instanceId }}</td>
+          <th mat-header-cell *matHeaderCellDef class="col-resizable">
+            Instance
+            <span
+              appColumnResizeHandle
+              [(width)]="columnWidths.instanceId"
+              (resizeEnd)="saveColumnWidths()"
+            ></span>
+          </th>
+          <td mat-cell *matCellDef="let row" class="mono" [matTooltip]="row.instanceId">
+            <span class="cell-truncate">{{ row.instanceId }}</span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="runId">
-          <th mat-header-cell *matHeaderCellDef>Run</th>
-          <td mat-cell *matCellDef="let row" class="mono">{{ row.runId }}</td>
+          <th mat-header-cell *matHeaderCellDef class="col-resizable">
+            Run
+            <span
+              appColumnResizeHandle
+              [(width)]="columnWidths.runId"
+              (resizeEnd)="saveColumnWidths()"
+            ></span>
+          </th>
+          <td mat-cell *matCellDef="let row" class="mono" [matTooltip]="row.runId">
+            <span class="cell-truncate">{{ row.runId }}</span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="flowName">
-          <th mat-header-cell *matHeaderCellDef>Flow</th>
-          <td mat-cell *matCellDef="let row">{{ row.flowName }}</td>
+          <th mat-header-cell *matHeaderCellDef class="col-resizable">
+            Flow
+            <span
+              appColumnResizeHandle
+              [(width)]="columnWidths.flowName"
+              (resizeEnd)="saveColumnWidths()"
+            ></span>
+          </th>
+          <td mat-cell *matCellDef="let row" [matTooltip]="row.flowName">
+            <span class="cell-truncate">{{ row.flowName }}</span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef class="col-resizable">
+            Status
+            <span
+              appColumnResizeHandle
+              [(width)]="columnWidths.status"
+              (resizeEnd)="saveColumnWidths()"
+            ></span>
+          </th>
           <td mat-cell *matCellDef="let row">
             <app-status-badge
               [label]="statusLabel(row.status)"
@@ -85,18 +131,43 @@
         </ng-container>
 
         <ng-container matColumnDef="currentStep">
-          <th mat-header-cell *matHeaderCellDef>Step</th>
-          <td mat-cell *matCellDef="let row">{{ row.currentStep }}</td>
+          <th mat-header-cell *matHeaderCellDef class="col-resizable">
+            Step
+            <span
+              appColumnResizeHandle
+              [(width)]="columnWidths.currentStep"
+              (resizeEnd)="saveColumnWidths()"
+            ></span>
+          </th>
+          <td mat-cell *matCellDef="let row" [matTooltip]="'' + row.currentStep">
+            <span class="cell-truncate">{{ row.currentStep }}</span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="attempts">
-          <th mat-header-cell *matHeaderCellDef>Attempts</th>
+          <th mat-header-cell *matHeaderCellDef class="col-resizable">
+            Attempts
+            <span
+              appColumnResizeHandle
+              [(width)]="columnWidths.attempts"
+              (resizeEnd)="saveColumnWidths()"
+            ></span>
+          </th>
           <td mat-cell *matCellDef="let row">{{ row.attempts }}</td>
         </ng-container>
 
         <ng-container matColumnDef="updatedAt">
-          <th mat-header-cell *matHeaderCellDef>Updated</th>
-          <td mat-cell *matCellDef="let row">{{ row.updatedAt | date: 'medium' }}</td>
+          <th mat-header-cell *matHeaderCellDef class="col-resizable">
+            Updated
+            <span
+              appColumnResizeHandle
+              [(width)]="columnWidths.updatedAt"
+              (resizeEnd)="saveColumnWidths()"
+            ></span>
+          </th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.updatedAt | date: 'medium' }}
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="actions">
@@ -112,6 +183,14 @@
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
       </table>
+
+      <mat-paginator
+        [length]="totalCount"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (page)="onPageChange($event)"
+      ></mat-paginator>
     </div>
   }
 </section>

@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <PackageId>Durably.Abstractions</PackageId>
-    <Description>Durably core abstractions: the stable contract (IStep, IFlow, IFlowEngine, IExecutionStore) shared by the engine and persistence providers.</Description>
+    <Description>Contracts for Durably durable workflow execution, including IFlow, IStep, IFlowEngine, and IExecutionStore. Reference this package when you build a store or an integration that should not depend on the engine.</Description>
+    <PackageTags>$(PackageTags);abstractions</PackageTags>
   </PropertyGroup>
 
 </Project>

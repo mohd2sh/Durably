@@ -257,3 +257,41 @@ a {
   color: var(--text-muted);
   font-size: 0.9375rem;
 }
+
+body.is-col-resizing,
+body.is-col-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  z-index: 3;
+}
+
+.column-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: var(--border-strong);
+  opacity: 0.55;
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.column-resize-handle:hover::after,
+body.is-col-resizing .column-resize-handle::after {
+  opacity: 1;
+  background: var(--accent);
+}
